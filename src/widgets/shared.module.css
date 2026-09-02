@@ -1,0 +1,125 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spread {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bigNumber {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(32px, 4vw, 64px);
+  line-height: 1;
+  background: var(--grad-a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.08);
+  color: var(--text-lo);
+}
+
+.touchRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: var(--touch-min);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+.touchRow:active { transform: scale(0.98); background: rgba(255,255,255,0.08); }
+
+.checkCircle {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--text-lo);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition-fast);
+}
+.checkCircle.done {
+  background: var(--grad-a);
+  border-color: transparent;
+}
+
+.strike { text-decoration: line-through; opacity: 0.45; }
+
+.btnPrimary {
+  min-height: var(--touch-min);
+  padding: 0 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--grad-a);
+  color: white;
+  font-weight: 700;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+.btnPrimary:active { transform: scale(0.96); }
+
+.btnGhost {
+  min-height: var(--touch-min);
+  padding: 0 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+  background: rgba(255,255,255,0.05);
+  color: var(--text-hi);
+  font-weight: 600;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+.btnGhost:active { transform: scale(0.96); }
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-lo);
+  gap: 8px;
+  text-align: center;
+}
+
+.input {
+  min-height: var(--touch-min);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+  background: rgba(0,0,0,0.25);
+  color: var(--text-hi);
+  padding: 0 16px;
+  font-size: 16px;
+  width: 100%;
+}
+.input:focus { outline: 2px solid var(--accent-3); }
