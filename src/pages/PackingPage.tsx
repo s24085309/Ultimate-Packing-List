@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   Plus, Trash2, BatteryCharging, Battery, Star, Download, Library,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
@@ -11,6 +11,37 @@ import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity
 import s from '../widgets/shared.module.css';
 
 const GIFTS_GROUP = '🎁 Gifts';
+
+const GROUP_COLORS = ['#f87171', '#fb923c', '#fbbf24', '#4ade80', '#22d3ee', '#60a5fa', '#a78bfa', '#f472b6', '#2dd4bf', '#facc15'];
+function groupColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  return GROUP_COLORS[hash % GROUP_COLORS.length];
+}
+
+function GroupHeader({ group, count, collapsed, onToggle, extra }: {
+  group: string; count: number; collapsed: boolean; onToggle: () => void; extra?: ReactNode;
+}) {
+  const color = groupColor(group);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+      <button
+        onClick={onToggle}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1,
+          background: 'none', border: 'none', padding: '4px 0', textAlign: 'left', cursor: 'pointer',
+        }}
+      >
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 8px 1px ${color}88`, flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {group} <span style={{ opacity: 0.65, fontWeight: 600 }}>({count})</span>
+        </span>
+        <ChevronDown size={16} color="var(--text-lo)" style={{ transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform var(--transition-fast)', flexShrink: 0 }} />
+      </button>
+      {extra && <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{extra}</span>}
+    </div>
+  );
+}
 
 const FILTERS: { id: ViewFilter; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -397,6 +428,7 @@ function MasterGroupSection({ group, items }: { group: string; items: ReturnType
   const addMasterItemToTrip = useStore(st => st.addMasterItemToTrip);
   const activeTripId = useStore(st => st.activeTripId);
   const [quickName, setQuickName] = useState('');
+  const [collapsed, setCollapsed] = useState(false);
 
   const quickAdd = () => {
     if (!quickName.trim()) return;
@@ -406,39 +438,43 @@ function MasterGroupSection({ group, items }: { group: string; items: ReturnType
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-lo)' }}>{group} <span style={{ opacity: 0.6 }}>({items.length})</span></div>
-        <button
-          onClick={() => { if (confirm(`Remove the whole "${group}" group (${items.length} item${items.length === 1 ? '' : 's'}) from the master library?`)) removeMasterGroup(group); }}
-          title="Remove this whole group"
-          style={{ background: 'none', border: 'none', color: 'var(--text-lo)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}
-        >
-          <Trash2 size={14} /> Remove group
-        </button>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {items.map(i => (
-          <div key={i.id} className={s.touchRow}>
-            <div style={{ flex: 1 }}>
-              {i.name}{i.isGift && <span className={s.pill} style={{ marginLeft: 8 }}>🎁 {i.giftFor || 'gift'}</span>}
+      <GroupHeader
+        group={group} count={items.length} collapsed={collapsed} onToggle={() => setCollapsed(c => !c)}
+        extra={
+          <button
+            onClick={() => { if (confirm(`Remove the whole "${group}" group (${items.length} item${items.length === 1 ? '' : 's'}) from the master library?`)) removeMasterGroup(group); }}
+            title="Remove this whole group"
+            style={{ background: 'none', border: 'none', color: 'var(--text-lo)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}
+          >
+            <Trash2 size={14} /> Remove group
+          </button>
+        }
+      />
+      {!collapsed && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+          {items.map(i => (
+            <div key={i.id} className={s.touchRow}>
+              <div style={{ flex: 1 }}>
+                {i.name}{i.isGift && <span className={s.pill} style={{ marginLeft: 8 }}>🎁 {i.giftFor || 'gift'}</span>}
+              </div>
+              {activeTripId && (
+                <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => addMasterItemToTrip(i.id, activeTripId)}>
+                  Add to trip
+                </button>
+              )}
+              <button onClick={() => removeMasterItem(i.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
             </div>
-            {activeTripId && (
-              <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => addMasterItemToTrip(i.id, activeTripId)}>
-                Add to trip
-              </button>
-            )}
-            <button onClick={() => removeMasterItem(i.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
+          ))}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              className={s.input} style={{ height: 38, fontSize: 13 }} placeholder={`Quick add to ${group}…`}
+              value={quickName} onChange={e => setQuickName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && quickAdd()}
+            />
+            <button className={s.btnGhost} onClick={quickAdd} style={{ width: 38, height: 38, padding: 0, flexShrink: 0 }}><Plus size={16} /></button>
           </div>
-        ))}
-        <div style={{ display: 'flex', gap: 6 }}>
-          <input
-            className={s.input} style={{ height: 38, fontSize: 13 }} placeholder={`Quick add to ${group}…`}
-            value={quickName} onChange={e => setQuickName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && quickAdd()}
-          />
-          <button className={s.btnGhost} onClick={quickAdd} style={{ width: 38, height: 38, padding: 0, flexShrink: 0 }}><Plus size={16} /></button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -520,6 +556,12 @@ export default function PackingPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
   const [taskText, setTaskText] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const toggleGroupCollapsed = (g: string) => setCollapsedGroups(prev => {
+    const next = new Set(prev);
+    if (next.has(g)) next.delete(g); else next.add(g);
+    return next;
+  });
 
   const trip = trips.find(t => t.id === activeTripId) ?? null;
   const tripItems = useMemo(() => items.filter(i => i.tripId === trip?.id), [items, trip]);
@@ -677,10 +719,16 @@ export default function PackingPage() {
             )}
             {visibleGroups.map(g => (
               <div key={g.group}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-lo)', marginBottom: 8 }}>{g.group}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {g.items.map(item => <ItemRow key={item.id} item={item} />)}
-                </div>
+                <GroupHeader
+                  group={g.group} count={g.items.length}
+                  collapsed={collapsedGroups.has(g.group)}
+                  onToggle={() => toggleGroupCollapsed(g.group)}
+                />
+                {!collapsedGroups.has(g.group) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                    {g.items.map(item => <ItemRow key={item.id} item={item} />)}
+                  </div>
+                )}
               </div>
             ))}
           </div>
