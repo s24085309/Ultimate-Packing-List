@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import {
   Plus, Trash2, BatteryCharging, Battery, Star, Download, Library,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
+  Archive, Eye, EyeOff, RotateCcw,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
@@ -364,6 +365,7 @@ function ItemRow({ item }: { item: PackingItem }) {
 
 function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
   const addItem = useStore(st => st.addPackingItem);
+  const ensureMasterItem = useStore(st => st.ensureMasterItem);
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
   const [qty, setQty] = useState(1);
@@ -375,10 +377,19 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
 
   const submit = () => {
     if (!name.trim()) return;
+    const finalGroup = group.trim() || 'Other';
+    const trimmedName = name.trim();
+    const finalNotes = notes.trim() || undefined;
+    const finalGiftFor = isGift ? giftFor.trim() || undefined : undefined;
     addItem(tripId, {
-      name: name.trim(), group: group.trim() || 'Other', qty: Math.max(1, qty), notes: notes.trim() || undefined,
+      name: trimmedName, group: finalGroup, qty: Math.max(1, qty), notes: finalNotes,
       packed: false, packLater: false, requiresCharging: charging, charged: false, favourite: false,
-      isGift, giftFor: isGift ? giftFor.trim() || undefined : undefined,
+      isGift, giftFor: finalGiftFor,
+    });
+    // Every item added anywhere also lives in the Master Library, so it's never re-typed from scratch.
+    ensureMasterItem({
+      name: trimmedName, group: finalGroup, qty: Math.max(1, qty), notes: finalNotes,
+      requiresCharging: charging, isGift, giftFor: finalGiftFor,
     });
     setName(''); setNotes(''); setQty(1); setCharging(false); setIsGift(false); setGiftFor('');
   };
@@ -423,8 +434,9 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
 
 function MasterGroupSection({ group, items }: { group: string; items: ReturnType<typeof useStore.getState>['masterPackingItems'] }) {
   const addMasterItem = useStore(st => st.addMasterItem);
-  const removeMasterItem = useStore(st => st.removeMasterItem);
-  const removeMasterGroup = useStore(st => st.removeMasterGroup);
+  const archiveMasterItem = useStore(st => st.archiveMasterItem);
+  const archiveMasterGroup = useStore(st => st.archiveMasterGroup);
+  const toggleMasterItemIgnored = useStore(st => st.toggleMasterItemIgnored);
   const addMasterItemToTrip = useStore(st => st.addMasterItemToTrip);
   const activeTripId = useStore(st => st.activeTripId);
   const [quickName, setQuickName] = useState('');
@@ -442,27 +454,35 @@ function MasterGroupSection({ group, items }: { group: string; items: ReturnType
         group={group} count={items.length} collapsed={collapsed} onToggle={() => setCollapsed(c => !c)}
         extra={
           <button
-            onClick={() => { if (confirm(`Remove the whole "${group}" group (${items.length} item${items.length === 1 ? '' : 's'}) from the master library?`)) removeMasterGroup(group); }}
-            title="Remove this whole group"
+            onClick={() => { if (confirm(`Archive the whole "${group}" group (${items.length} item${items.length === 1 ? '' : 's'})? You can restore it from the Archive any time.`)) archiveMasterGroup(group); }}
+            title="Archive this whole group"
             style={{ background: 'none', border: 'none', color: 'var(--text-lo)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}
           >
-            <Trash2 size={14} /> Remove group
+            <Archive size={14} /> Archive group
           </button>
         }
       />
       {!collapsed && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
           {items.map(i => (
-            <div key={i.id} className={s.touchRow}>
+            <div key={i.id} className={s.touchRow} style={i.ignored ? { opacity: 0.55 } : undefined}>
               <div style={{ flex: 1 }}>
                 {i.name}{i.isGift && <span className={s.pill} style={{ marginLeft: 8 }}>🎁 {i.giftFor || 'gift'}</span>}
+                {i.ignored && <span className={s.pill} style={{ marginLeft: 8 }}>🙈 ignored</span>}
               </div>
               {activeTripId && (
                 <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => addMasterItemToTrip(i.id, activeTripId)}>
                   Add to trip
                 </button>
               )}
-              <button onClick={() => removeMasterItem(i.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
+              <button
+                onClick={() => toggleMasterItemIgnored(i.id)}
+                title={i.ignored ? 'Stop ignoring — include in new trips again' : "Ignore — keep in the library but skip when seeding new trips"}
+                style={{ background: 'none', border: 'none', color: i.ignored ? '#facc15' : 'var(--text-lo)' }}
+              >
+                {i.ignored ? <Eye size={16} /> : <EyeOff size={16} />}
+              </button>
+              <button onClick={() => archiveMasterItem(i.id)} title="Archive this item" style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Archive size={16} /></button>
             </div>
           ))}
           <div style={{ display: 'flex', gap: 6 }}>
@@ -479,6 +499,62 @@ function MasterGroupSection({ group, items }: { group: string; items: ReturnType
   );
 }
 
+function MasterArchiveModal({ onClose }: { onClose: () => void }) {
+  const masterItems = useStore(st => st.masterPackingItems);
+  const restoreMasterItem = useStore(st => st.restoreMasterItem);
+  const deleteMasterItemPermanently = useStore(st => st.deleteMasterItemPermanently);
+  const archived = useMemo(() => masterItems.filter(m => m.archived), [masterItems]);
+
+  const groups = useMemo(() => {
+    const map = new Map<string, typeof archived>();
+    for (const m of archived) {
+      const key = m.group || 'Other';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(m);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [archived]);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 550, background: 'rgba(5,3,10,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div className="glass" style={{ width: 'min(520px,100%)', maxHeight: '85vh', overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 800, fontSize: 18 }}>🗄️ Archive</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><X size={22} /></button>
+        </div>
+        <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-lo)' }}>
+          Archived items are kept here instead of being deleted. Restore one back into the library, or delete it permanently — that can't be undone.
+        </p>
+        {archived.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>Nothing archived.</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {groups.map(([g, items]) => (
+            <div key={g}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: groupColor(g), marginBottom: 6 }}>{g} <span style={{ opacity: 0.65 }}>({items.length})</span></div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {items.map(i => (
+                  <div key={i.id} className={s.touchRow}>
+                    <div style={{ flex: 1, opacity: 0.75 }}>{i.name}</div>
+                    <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => restoreMasterItem(i.id)}>
+                      <RotateCcw size={14} /> Restore
+                    </button>
+                    <button
+                      onClick={() => { if (confirm(`Permanently delete "${i.name}"? This cannot be undone.`)) deleteMasterItemPermanently(i.id); }}
+                      title="Delete permanently"
+                      style={{ background: 'none', border: 'none', color: '#fda4af' }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const masterItems = useStore(st => st.masterPackingItems);
   const addMasterItem = useStore(st => st.addMasterItem);
@@ -486,16 +562,20 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const [group, setGroup] = useState('');
   const [isGift, setIsGift] = useState(false);
   const [giftFor, setGiftFor] = useState('');
+  const [archiveOpen, setArchiveOpen] = useState(false);
+
+  const activeItems = useMemo(() => masterItems.filter(m => !m.archived), [masterItems]);
+  const archivedCount = masterItems.length - activeItems.length;
 
   const groups = useMemo(() => {
-    const map = new Map<string, typeof masterItems>();
-    for (const m of masterItems) {
+    const map = new Map<string, typeof activeItems>();
+    for (const m of activeItems) {
       const key = m.group || 'Other';
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [masterItems]);
+  }, [activeItems]);
 
   const submit = () => {
     if (!name.trim()) return;
@@ -508,11 +588,16 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
       <div className="glass" style={{ width: 'min(560px,100%)', maxHeight: '85vh', overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 800, fontSize: 18 }}>🗃️ Master Packing Library</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><X size={22} /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5 }} onClick={() => setArchiveOpen(true)}>
+              <Archive size={14} /> Archive{archivedCount > 0 ? ` (${archivedCount})` : ''}
+            </button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><X size={22} /></button>
+          </div>
         </div>
         <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-lo)' }}>
-          Keep every item you might ever pack here — new trips are seeded from this list automatically.
-          Type a new group name below (or in a group's own quick-add box) to create it instantly; use "Remove group" to delete one in one tap.
+          Nothing here is ever deleted outright — every item added to a trip is saved here too, and every trip you create is seeded from this list.
+          Use 👁️ to ignore an item (it stays here but skips new trips) or 🗄️ to archive it — archived items move to the Archive, where you can restore them or delete them for good.
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <input className={s.input} placeholder="Item name" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
@@ -532,6 +617,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
           {groups.map(([g, items]) => <MasterGroupSection key={g} group={g} items={items} />)}
         </div>
       </div>
+      {archiveOpen && <MasterArchiveModal onClose={() => setArchiveOpen(false)} />}
     </div>
   );
 }

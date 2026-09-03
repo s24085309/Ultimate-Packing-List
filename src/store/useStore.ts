@@ -30,10 +30,14 @@ interface Store {
 
   addMasterItem: (item: Omit<MasterPackingItem, 'id'>) => void;
   updateMasterItem: (id: string, patch: Partial<Omit<MasterPackingItem, 'id'>>) => void;
-  removeMasterItem: (id: string) => void;
   addMasterItemToTrip: (masterId: string, tripId: string) => void;
   addAllMasterItemsToTrip: (tripId: string) => void;
-  removeMasterGroup: (group: string) => void;
+  archiveMasterItem: (id: string) => void;
+  archiveMasterGroup: (group: string) => void;
+  restoreMasterItem: (id: string) => void;
+  deleteMasterItemPermanently: (id: string) => void;
+  toggleMasterItemIgnored: (id: string) => void;
+  ensureMasterItem: (item: Omit<MasterPackingItem, 'id'>) => void;
 
   addDepartureTask: (tripId: string, text: string) => void;
   toggleDepartureTask: (id: string) => void;
@@ -143,9 +147,23 @@ export const useStore = create<Store>((set, get) => ({
     db.masterPackingItems.put(updated);
     set({ masterPackingItems: get().masterPackingItems.map(i => i.id === id ? updated : i) });
   },
-  removeMasterItem: (id) => {
+  ensureMasterItem: (item) => {
+    const exists = get().masterPackingItems.some(
+      m => m.name.trim().toLowerCase() === item.name.trim().toLowerCase() && m.group === item.group,
+    );
+    if (exists) return;
+    get().addMasterItem(item);
+  },
+  archiveMasterItem: (id) => get().updateMasterItem(id, { archived: true, ignored: false }),
+  restoreMasterItem: (id) => get().updateMasterItem(id, { archived: false }),
+  deleteMasterItemPermanently: (id) => {
     db.masterPackingItems.delete(id);
     set({ masterPackingItems: get().masterPackingItems.filter(i => i.id !== id) });
+  },
+  toggleMasterItemIgnored: (id) => {
+    const item = get().masterPackingItems.find(i => i.id === id);
+    if (!item) return;
+    get().updateMasterItem(id, { ignored: !item.ignored });
   },
   addMasterItemToTrip: (masterId, tripId) => {
     const m = get().masterPackingItems.find(i => i.id === masterId);
@@ -157,7 +175,7 @@ export const useStore = create<Store>((set, get) => ({
     });
   },
   addAllMasterItemsToTrip: (tripId) => {
-    const masterItems = get().masterPackingItems;
+    const masterItems = get().masterPackingItems.filter(m => !m.archived && !m.ignored);
     if (masterItems.length === 0) return;
     const existing = new Set(get().packingItems.filter(i => i.tripId === tripId).map(i => `${i.group}::${i.name}`));
     const created: PackingItem[] = masterItems
@@ -171,11 +189,12 @@ export const useStore = create<Store>((set, get) => ({
     db.packingItems.bulkPut(created);
     set({ packingItems: [...get().packingItems, ...created] });
   },
-  removeMasterGroup: (group) => {
-    const ids = get().masterPackingItems.filter(i => (i.group || 'Other') === group).map(i => i.id);
+  archiveMasterGroup: (group) => {
+    const ids = get().masterPackingItems.filter(i => !i.archived && (i.group || 'Other') === group).map(i => i.id);
     if (ids.length === 0) return;
-    db.masterPackingItems.bulkDelete(ids);
-    set({ masterPackingItems: get().masterPackingItems.filter(i => !ids.includes(i.id)) });
+    const updated = get().masterPackingItems.map(i => ids.includes(i.id) ? { ...i, archived: true, ignored: false } : i);
+    db.masterPackingItems.bulkPut(updated.filter(i => ids.includes(i.id)));
+    set({ masterPackingItems: updated });
   },
 
   addDepartureTask: (tripId, text) => {

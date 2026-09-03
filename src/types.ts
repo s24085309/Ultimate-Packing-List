@@ -63,6 +63,8 @@ export interface MasterPackingItem {
   requiresCharging: boolean;
   isGift: boolean;
   giftFor?: string;
+  archived?: boolean; // soft-deleted — hidden from the active library, restorable, or permanently deletable from the Archive
+  ignored?: boolean; // stays in the active library but is skipped when auto-seeding new trips
 }
 
 export interface DepartureTask {
