@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import {
   Plus, Trash2, BatteryCharging, Battery, Star, Download, Library,
-  ChevronDown, PlaneTakeoff, Luggage, Pencil, X,
+  ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
 import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, conditionEmoji, type ViewFilter } from '../lib/packingExport';
-import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay } from '../types';
+import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
+import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity } from '../types';
 import s from '../widgets/shared.module.css';
 
 const GIFTS_GROUP = '🎁 Gifts';
@@ -22,18 +23,72 @@ const FILTERS: { id: ViewFilter; label: string }[] = [
 const EMPTY_TRIP_DRAFT = {
   name: '', destinations: '', departureDate: '', returnDate: '', accommodation: '',
   tripType: 'City' as Trip['tripType'], weatherLow: undefined as number | undefined, weatherHigh: undefined as number | undefined,
-  weatherConditions: '', weatherNotes: '', notes: '', weatherDaily: [] as WeatherDay[],
+  weatherConditions: '', weatherNotes: '', notes: '', weatherDaily: [] as WeatherDay[], cities: [] as TripCity[],
 };
 
 const EMPTY_WEATHER_DAY: WeatherDay = { day: '', high: undefined, low: undefined, conditions: '' };
 
-function WeatherDayRow({ day, onChange, onRemove }: { day: WeatherDay; onChange: (d: WeatherDay) => void; onRemove: () => void }) {
+function dateRange(start: string, end: string): string[] {
+  const dates: string[] = [];
+  const d = new Date(start + 'T00:00:00');
+  const endD = new Date(end + 'T00:00:00');
+  while (d <= endD) {
+    dates.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+}
+
+function assignCitiesToDates(dates: string[], cities: TripCity[]): TripCity[] {
+  if (cities.length === 0) return [];
+  const perCity = Math.ceil(dates.length / cities.length);
+  return dates.map((_, i) => cities[Math.min(cities.length - 1, Math.floor(i / perCity))]);
+}
+
+function dayLabel(date: string): string {
+  const d = new Date(date + 'T00:00:00');
+  return `${d.toLocaleDateString(undefined, { weekday: 'short' })} ${d.getDate()}`;
+}
+
+function WeatherDayRow({ day, cities, onChange, onRemove, onRefetch }: {
+  day: WeatherDay; cities: TripCity[]; onChange: (d: WeatherDay) => void; onRemove: () => void; onRefetch?: (cityName: string) => void;
+}) {
+  const [refetching, setRefetching] = useState(false);
+  const doRefetch = async (cityName: string) => {
+    if (!onRefetch) return;
+    setRefetching(true);
+    await onRefetch(cityName);
+    setRefetching(false);
+  };
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.8fr 1.4fr auto', gap: 6, alignItems: 'center' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: cities.length > 1 ? '1fr 0.7fr 0.7fr 1.2fr 1.1fr auto' : '1.4fr 0.8fr 0.8fr 1.4fr auto', gap: 6, alignItems: 'center' }}>
       <input className={s.input} style={{ height: 44 }} placeholder="Day (e.g. Thu)" value={day.day} onChange={e => onChange({ ...day, day: e.target.value })} />
       <input type="number" className={s.input} style={{ height: 44 }} placeholder="High°" value={day.high ?? ''} onChange={e => onChange({ ...day, high: e.target.value ? Number(e.target.value) : undefined })} />
       <input type="number" className={s.input} style={{ height: 44 }} placeholder="Low°" value={day.low ?? ''} onChange={e => onChange({ ...day, low: e.target.value ? Number(e.target.value) : undefined })} />
       <input className={s.input} style={{ height: 44 }} placeholder="Conditions (e.g. Sunny)" value={day.conditions ?? ''} onChange={e => onChange({ ...day, conditions: e.target.value })} />
+      {cities.length > 1 && (
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          <select
+            className={s.input}
+            style={{ height: 44, fontSize: 12.5 }}
+            value={day.city ?? ''}
+            onChange={e => { onChange({ ...day, city: e.target.value }); doRefetch(e.target.value); }}
+          >
+            <option value="">City…</option>
+            {cities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+          </select>
+          {day.date && (
+            <button
+              onClick={() => day.city && doRefetch(day.city)}
+              disabled={!day.city || refetching}
+              title="Refresh this day's forecast"
+              style={{ background: 'none', border: 'none', color: 'var(--text-lo)', flexShrink: 0 }}
+            >
+              {refetching ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
+            </button>
+          )}
+        </div>
+      )}
       <button onClick={onRemove} style={{ background: 'none', border: 'none', color: 'var(--text-lo)', width: 32, flexShrink: 0 }}><Trash2 size={15} /></button>
     </div>
   );
@@ -44,14 +99,105 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
     name: trip.name, destinations: trip.destinations, departureDate: trip.departureDate, returnDate: trip.returnDate,
     accommodation: trip.accommodation, tripType: trip.tripType, weatherLow: trip.weatherLow, weatherHigh: trip.weatherHigh,
     weatherConditions: trip.weatherConditions ?? '', weatherNotes: trip.weatherNotes ?? '', notes: trip.notes ?? '',
-    weatherDaily: trip.weatherDaily ?? [],
+    weatherDaily: trip.weatherDaily ?? [], cities: trip.cities ?? [],
   } : EMPTY_TRIP_DRAFT);
+
+  const [cityQuery, setCityQuery] = useState('');
+  const [cityResults, setCityResults] = useState<CityResult[]>([]);
+  const [citySearching, setCitySearching] = useState(false);
+  const [cityError, setCityError] = useState<string | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
 
   const set = <K extends keyof typeof draft>(k: K, v: typeof draft[K]) => setDraft(d => ({ ...d, [k]: v }));
 
   const setDay = (i: number, day: WeatherDay) => set('weatherDaily', draft.weatherDaily.map((d, idx) => idx === i ? day : d));
   const addDay = () => set('weatherDaily', [...draft.weatherDaily, { ...EMPTY_WEATHER_DAY }]);
   const removeDay = (i: number) => set('weatherDaily', draft.weatherDaily.filter((_, idx) => idx !== i));
+
+  const doSearchCities = async () => {
+    if (!cityQuery.trim()) return;
+    setCitySearching(true);
+    setCityError(null);
+    try {
+      const results = await searchCities(cityQuery);
+      setCityResults(results);
+      if (results.length === 0) setCityError('No cities found.');
+    } catch {
+      setCityError('City search failed — check your connection.');
+    } finally {
+      setCitySearching(false);
+    }
+  };
+
+  const addCity = (c: CityResult) => {
+    if (draft.cities.some(x => x.name === c.name && x.lat === c.lat)) return;
+    set('cities', [...draft.cities, c]);
+    setCityQuery('');
+    setCityResults([]);
+  };
+  const removeCity = (idx: number) => set('cities', draft.cities.filter((_, i) => i !== idx));
+
+  const updateSummaryFromDaily = (daily: WeatherDay[], truncated: boolean) => {
+    const highs = daily.map(d => d.high).filter((n): n is number => n != null);
+    const lows = daily.map(d => d.low).filter((n): n is number => n != null);
+    if (highs.length) set('weatherHigh', Math.max(...highs));
+    if (lows.length) set('weatherLow', Math.min(...lows));
+    const counts = new Map<string, number>();
+    daily.forEach(d => { if (d.conditions) counts.set(d.conditions, (counts.get(d.conditions) ?? 0) + 1); });
+    const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (top) set('weatherConditions', truncated ? `${top} (forecast covers the first part of the trip only)` : top);
+  };
+
+  const fetchLiveWeather = async () => {
+    if (draft.cities.length === 0 || !draft.departureDate || !draft.returnDate) return;
+    setWeatherLoading(true);
+    setWeatherError(null);
+    try {
+      const allDates = dateRange(draft.departureDate, draft.returnDate);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const horizonEnd = new Date(today); horizonEnd.setDate(horizonEnd.getDate() + FORECAST_HORIZON_DAYS);
+      const availableDates = allDates.filter(d => {
+        const dt = new Date(d + 'T00:00:00');
+        return dt >= today && dt <= horizonEnd;
+      });
+      if (availableDates.length === 0) {
+        setWeatherError(`Live forecasts only cover the next ${FORECAST_HORIZON_DAYS} days — this trip is further out. Check back closer to departure, or enter days manually below.`);
+        return;
+      }
+      const cityForDate = assignCitiesToDates(availableDates, draft.cities);
+      const uniqueCities = Array.from(new Map(cityForDate.map(c => [c.name, c])).values());
+      const forecastsByCity = new Map<string, ForecastDay[]>();
+      await Promise.all(uniqueCities.map(async city => {
+        const fc = await fetchForecast(city.lat, city.lon, availableDates[0], availableDates[availableDates.length - 1]);
+        forecastsByCity.set(city.name, fc);
+      }));
+      const newDaily: WeatherDay[] = availableDates.map((date, i) => {
+        const city = cityForDate[i];
+        const match = forecastsByCity.get(city.name)?.find(f => f.date === date);
+        return { day: dayLabel(date), date, high: match?.high, low: match?.low, conditions: match?.conditions, city: city.name };
+      });
+      set('weatherDaily', newDaily);
+      updateSummaryFromDaily(newDaily, availableDates.length < allDates.length);
+    } catch (err) {
+      setWeatherError((err as Error)?.message || 'Could not fetch weather.');
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
+  const refetchDay = async (i: number, cityName: string) => {
+    const city = draft.cities.find(c => c.name === cityName);
+    const day = draft.weatherDaily[i];
+    if (!city || !day?.date) return;
+    try {
+      const fc = await fetchForecast(city.lat, city.lon, day.date, day.date);
+      const f = fc[0];
+      setDay(i, { ...day, city: city.name, high: f?.high ?? day.high, low: f?.low ?? day.low, conditions: f?.conditions ?? day.conditions });
+    } catch {
+      // leave the existing values in place on a failed single-day refetch
+    }
+  };
 
   return (
     <div className="glass" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -73,6 +219,57 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
       </select>
       <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ fontSize: 12, color: 'var(--text-lo)', fontWeight: 700 }}>🌦️ WEATHER SUMMARY (for packing)</div>
+
+        <div style={{ fontSize: 11, color: 'var(--text-lo)' }}>CITIES FOR LIVE WEATHER</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            className={s.input} placeholder="Search a city…" value={cityQuery}
+            onChange={e => setCityQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && doSearchCities()}
+          />
+          <button className={s.btnGhost} onClick={doSearchCities} disabled={citySearching} style={{ width: 48, padding: 0, flexShrink: 0 }}>
+            {citySearching ? <Loader2 size={16} className="spin" /> : <Search size={16} />}
+          </button>
+        </div>
+        {cityError && <div style={{ fontSize: 12, color: '#fda4af' }}>{cityError}</div>}
+        {cityResults.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {cityResults.map((c, i) => (
+              <button
+                key={i} onClick={() => addCity(c)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left',
+                  padding: '8px 12px', borderRadius: 10, border: '1px solid var(--card-border)',
+                  background: 'rgba(255,255,255,0.04)', color: 'var(--text-hi)', fontSize: 13,
+                }}
+              >
+                <span>{c.name}{c.admin1 ? `, ${c.admin1}` : ''}{c.country ? `, ${c.country}` : ''}</span>
+                <Plus size={14} />
+              </button>
+            ))}
+          </div>
+        )}
+        {draft.cities.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {draft.cities.map((c, i) => (
+              <span key={i} className={s.pill} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {c.name}
+                <button onClick={() => removeCity(i)} style={{ background: 'none', border: 'none', color: 'inherit', display: 'flex' }}><X size={12} /></button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <button
+          className={s.btnGhost} onClick={fetchLiveWeather}
+          disabled={weatherLoading || draft.cities.length === 0 || !draft.departureDate || !draft.returnDate}
+          style={{ justifyContent: 'center' }}
+        >
+          {weatherLoading ? <Loader2 size={16} className="spin" /> : <CloudSun size={16} />}
+          Fetch Live Weather for Trip Dates
+        </button>
+        {weatherError && <div style={{ fontSize: 12, color: '#fda4af' }}>{weatherError}</div>}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <input type="number" className={s.input} placeholder="Low °" value={draft.weatherLow ?? ''} onChange={e => set('weatherLow', e.target.value ? Number(e.target.value) : undefined)} />
           <input type="number" className={s.input} placeholder="High °" value={draft.weatherHigh ?? ''} onChange={e => set('weatherHigh', e.target.value ? Number(e.target.value) : undefined)} />
@@ -80,12 +277,12 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
         <input className={s.input} placeholder="Conditions (e.g. Sunny, occasional rain)" value={draft.weatherConditions} onChange={e => set('weatherConditions', e.target.value)} />
         <input className={s.input} placeholder="Weather notes for packing" value={draft.weatherNotes} onChange={e => set('weatherNotes', e.target.value)} />
 
-        <div style={{ fontSize: 11, color: 'var(--text-lo)', marginTop: 6 }}>DAILY FORECAST (optional)</div>
+        <div style={{ fontSize: 11, color: 'var(--text-lo)', marginTop: 6 }}>DAILY FORECAST {draft.weatherDaily.length > 0 ? '' : '(optional)'}</div>
         {draft.weatherDaily.map((day, i) => (
-          <WeatherDayRow key={i} day={day} onChange={d => setDay(i, d)} onRemove={() => removeDay(i)} />
+          <WeatherDayRow key={i} day={day} cities={draft.cities} onChange={d => setDay(i, d)} onRemove={() => removeDay(i)} onRefetch={cityName => refetchDay(i, cityName)} />
         ))}
         <button className={s.btnGhost} onClick={addDay} style={{ alignSelf: 'flex-start', minHeight: 36, padding: '0 14px', fontSize: 13 }}>
-          <Plus size={14} /> Add Day
+          <Plus size={14} /> Add Day Manually
         </button>
       </div>
       <textarea className={s.input} style={{ minHeight: 60, paddingTop: 12, resize: 'vertical' }} placeholder="Trip notes" value={draft.notes} onChange={e => set('notes', e.target.value)} />
@@ -93,6 +290,7 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
         <button className={s.btnGhost} onClick={onCancel}>Cancel</button>
         <button className={s.btnPrimary} disabled={!draft.name.trim()} onClick={() => onSave(draft)}>Save Trip</button>
       </div>
+      <style>{`.spin { animation: tripFormSpin 0.8s linear infinite; } @keyframes tripFormSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
@@ -391,6 +589,7 @@ export default function PackingPage() {
                             {d.high != null ? `${d.high}°` : '—'}
                             <span style={{ color: 'var(--text-lo)', fontWeight: 500 }}> {d.low != null ? `${d.low}°` : ''}</span>
                           </div>
+                          {d.city && <div style={{ fontSize: 9, color: 'var(--accent-3)', marginTop: 2 }}>{d.city}</div>}
                         </div>
                       ))}
                     </div>

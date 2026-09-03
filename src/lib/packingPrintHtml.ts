@@ -40,6 +40,7 @@ const DOC_STYLE = `
   .forecastDay .e { font-size: 18px; margin: 3px 0; }
   .forecastDay .t { font-size: 11.5px; font-weight: 700; }
   .forecastDay .t .lo { color: #7a7188; font-weight: 500; }
+  .forecastDay .c { font-size: 9px; color: #a389d4; margin-top: 2px; }
 `;
 
 function infoGrid(model: ExportModel): string {
@@ -67,6 +68,7 @@ function weatherBlock(model: ExportModel): string {
           <div class="d">${esc(d.day || `Day ${i + 1}`)}</div>
           <div class="e">${conditionEmoji(d.conditions)}</div>
           <div class="t">${d.high != null ? `${d.high}°` : '—'} <span class="lo">${d.low != null ? `${d.low}°` : ''}</span></div>
+          ${d.city ? `<div class="c">${esc(d.city)}</div>` : ''}
         </div>`).join('')}
     </div>` : '';
   return `

@@ -82,7 +82,7 @@ export async function buildTripDocx(model: ExportModel): Promise<Blob> {
       children.push(checkboxTable(
         trip.weatherDaily!.map((d, i) => ({
           checked: false,
-          primary: d.day || `Day ${i + 1}`,
+          primary: `${d.day || `Day ${i + 1}`}${d.city ? ` (${d.city})` : ''}`,
           secondary: d.high != null ? `${d.high}° / ${d.low ?? '?'}°` : '',
           tertiary: `${conditionEmoji(d.conditions)} ${d.conditions ?? ''}`,
         })),

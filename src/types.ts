@@ -4,9 +4,19 @@ export const TRIP_TYPES: TripType[] = ['Beach', 'City', 'Business', 'Camping', '
 
 export interface WeatherDay {
   day: string;
+  date?: string; // ISO date (YYYY-MM-DD), present for auto-fetched days
   high?: number;
   low?: number;
   conditions?: string;
+  city?: string;
+}
+
+export interface TripCity {
+  name: string;
+  admin1?: string;
+  country?: string;
+  lat: number;
+  lon: number;
 }
 
 export interface Trip {
@@ -17,6 +27,7 @@ export interface Trip {
   returnDate: string; // ISO date
   accommodation: string;
   tripType: TripType;
+  cities?: TripCity[];
   weatherLow?: number;
   weatherHigh?: number;
   weatherConditions?: string;

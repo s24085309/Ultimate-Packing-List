@@ -59,13 +59,14 @@ export async function buildTripXlsx(trip: Trip, allItems: PackingItem[], allTask
 
   if (trip.weatherDaily && trip.weatherDaily.length > 0) {
     summary.addRow([]);
-    const forecastHeaderRow = summary.addRow(['Daily Forecast', 'High / Low', 'Conditions']);
+    const forecastHeaderRow = summary.addRow(['Daily Forecast', 'High / Low', 'Conditions', 'City']);
     forecastHeaderRow.font = { bold: true, color: { argb: 'FF9333EA' } };
     trip.weatherDaily.forEach((d, i) => {
       summary.addRow([
         d.day || `Day ${i + 1}`,
         d.high != null ? `${d.high}° / ${d.low ?? '?'}°` : '',
         `${conditionEmoji(d.conditions)} ${d.conditions ?? ''}`,
+        d.city ?? '',
       ]);
     });
   }
