@@ -1,5 +1,16 @@
 import type { Trip, PackingItem, DepartureTask, MasterPackingItem } from '../types';
 
+export function conditionEmoji(conditions: string | undefined): string {
+  const c = (conditions ?? '').toLowerCase();
+  if (c.includes('snow')) return '❄️';
+  if (c.includes('storm') || c.includes('thunder')) return '⛈️';
+  if (c.includes('rain') || c.includes('shower')) return '🌧️';
+  if ((c.includes('cloud') && (c.includes('sun') || c.includes('partly'))) || c.includes('partly')) return '⛅';
+  if (c.includes('cloud') || c.includes('overcast')) return '☁️';
+  if (c.includes('sun') || c.includes('clear')) return '☀️';
+  return '🌤️';
+}
+
 // ---------- Options & filters ----------
 
 export interface ExportOptions {
@@ -143,18 +154,33 @@ function slug(text: string): string {
 
 export function filenameFor(trip: Trip, ext: string): string {
   const year = trip.departureDate ? new Date(trip.departureDate).getFullYear() : new Date().getFullYear();
-  return `Spongie_${slug(trip.name)}_${year}_Packing_List.${ext}`;
+  return `${slug(trip.name)}_${year}_Packing_List.${ext}`;
 }
 
 export function masterFilenameFor(ext: string): string {
   const date = new Date().toISOString().slice(0, 10);
-  return `Spongie_Master_Packing_Library_${date}.${ext}`;
+  return `Master_Packing_Library_${date}.${ext}`;
 }
 
 export function statusLine(model: ExportModel): { emoji: string; text: string } {
   return model.ready
     ? { emoji: '🟢', text: 'READY TO GO!' }
     : { emoji: '🟠', text: 'NOT QUITE READY' };
+}
+
+export function departureCountdown(trip: Trip): string {
+  if (!trip.departureDate) return '';
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const dep = new Date(trip.departureDate); dep.setHours(0, 0, 0, 0);
+  const daysToDep = Math.round((dep.getTime() - now.getTime()) / 86400000);
+  if (daysToDep > 1) return `🛫 Departs in ${daysToDep} days`;
+  if (daysToDep === 1) return `🛫 Departs tomorrow!`;
+  if (daysToDep === 0) return `🛫 Departing today!`;
+  if (trip.returnDate) {
+    const ret = new Date(trip.returnDate); ret.setHours(0, 0, 0, 0);
+    if (now.getTime() <= ret.getTime()) return `✈️ Trip in progress`;
+  }
+  return `✅ Trip completed`;
 }
 
 export function formatDateRange(trip: Trip): string {

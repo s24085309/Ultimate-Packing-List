@@ -5,8 +5,8 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
-import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, type ViewFilter } from '../lib/packingExport';
-import { TRIP_TYPES, type Trip, type PackingItem } from '../types';
+import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, conditionEmoji, type ViewFilter } from '../lib/packingExport';
+import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay } from '../types';
 import s from '../widgets/shared.module.css';
 
 const GIFTS_GROUP = '🎁 Gifts';
@@ -22,17 +22,36 @@ const FILTERS: { id: ViewFilter; label: string }[] = [
 const EMPTY_TRIP_DRAFT = {
   name: '', destinations: '', departureDate: '', returnDate: '', accommodation: '',
   tripType: 'City' as Trip['tripType'], weatherLow: undefined as number | undefined, weatherHigh: undefined as number | undefined,
-  weatherConditions: '', weatherNotes: '', notes: '',
+  weatherConditions: '', weatherNotes: '', notes: '', weatherDaily: [] as WeatherDay[],
 };
+
+const EMPTY_WEATHER_DAY: WeatherDay = { day: '', high: undefined, low: undefined, conditions: '' };
+
+function WeatherDayRow({ day, onChange, onRemove }: { day: WeatherDay; onChange: (d: WeatherDay) => void; onRemove: () => void }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.8fr 1.4fr auto', gap: 6, alignItems: 'center' }}>
+      <input className={s.input} style={{ height: 44 }} placeholder="Day (e.g. Thu)" value={day.day} onChange={e => onChange({ ...day, day: e.target.value })} />
+      <input type="number" className={s.input} style={{ height: 44 }} placeholder="High°" value={day.high ?? ''} onChange={e => onChange({ ...day, high: e.target.value ? Number(e.target.value) : undefined })} />
+      <input type="number" className={s.input} style={{ height: 44 }} placeholder="Low°" value={day.low ?? ''} onChange={e => onChange({ ...day, low: e.target.value ? Number(e.target.value) : undefined })} />
+      <input className={s.input} style={{ height: 44 }} placeholder="Conditions (e.g. Sunny)" value={day.conditions ?? ''} onChange={e => onChange({ ...day, conditions: e.target.value })} />
+      <button onClick={onRemove} style={{ background: 'none', border: 'none', color: 'var(--text-lo)', width: 32, flexShrink: 0 }}><Trash2 size={15} /></button>
+    </div>
+  );
+}
 
 function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof EMPTY_TRIP_DRAFT) => void; onCancel: () => void }) {
   const [draft, setDraft] = useState(trip ? {
     name: trip.name, destinations: trip.destinations, departureDate: trip.departureDate, returnDate: trip.returnDate,
     accommodation: trip.accommodation, tripType: trip.tripType, weatherLow: trip.weatherLow, weatherHigh: trip.weatherHigh,
     weatherConditions: trip.weatherConditions ?? '', weatherNotes: trip.weatherNotes ?? '', notes: trip.notes ?? '',
+    weatherDaily: trip.weatherDaily ?? [],
   } : EMPTY_TRIP_DRAFT);
 
   const set = <K extends keyof typeof draft>(k: K, v: typeof draft[K]) => setDraft(d => ({ ...d, [k]: v }));
+
+  const setDay = (i: number, day: WeatherDay) => set('weatherDaily', draft.weatherDaily.map((d, idx) => idx === i ? day : d));
+  const addDay = () => set('weatherDaily', [...draft.weatherDaily, { ...EMPTY_WEATHER_DAY }]);
+  const removeDay = (i: number) => set('weatherDaily', draft.weatherDaily.filter((_, idx) => idx !== i));
 
   return (
     <div className="glass" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -60,6 +79,14 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
         </div>
         <input className={s.input} placeholder="Conditions (e.g. Sunny, occasional rain)" value={draft.weatherConditions} onChange={e => set('weatherConditions', e.target.value)} />
         <input className={s.input} placeholder="Weather notes for packing" value={draft.weatherNotes} onChange={e => set('weatherNotes', e.target.value)} />
+
+        <div style={{ fontSize: 11, color: 'var(--text-lo)', marginTop: 6 }}>DAILY FORECAST (optional)</div>
+        {draft.weatherDaily.map((day, i) => (
+          <WeatherDayRow key={i} day={day} onChange={d => setDay(i, d)} onRemove={() => removeDay(i)} />
+        ))}
+        <button className={s.btnGhost} onClick={addDay} style={{ alignSelf: 'flex-start', minHeight: 36, padding: '0 14px', fontSize: 13 }}>
+          <Plus size={14} /> Add Day
+        </button>
       </div>
       <textarea className={s.input} style={{ minHeight: 60, paddingTop: 12, resize: 'vertical' }} placeholder="Trip notes" value={draft.notes} onChange={e => set('notes', e.target.value)} />
       <div className={s.row} style={{ justifyContent: 'flex-end' }}>
@@ -277,7 +304,7 @@ export default function PackingPage() {
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 2vw, 32px)', margin: 0 }}>🧽 Spongie Ultimate Travel Packing List</h1>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 2vw, 32px)', margin: 0 }}>🧽 Ultimate Travel Packing List</h1>
         <div className={s.row}>
           <button className={s.btnGhost} onClick={() => setMasterOpen(true)}><Library size={18} /> Master Library</button>
           <button className={s.btnPrimary} onClick={() => setExportOpen(true)}><Download size={18} /> Export / Share</button>
@@ -336,7 +363,12 @@ export default function PackingPage() {
             <div className="glass" style={{ padding: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 20 }}>{trip.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ fontWeight: 800, fontSize: 20 }}>{trip.name}</div>
+                    <span className={s.pill} style={{ background: 'rgba(168,85,247,0.18)', color: '#c4b5fd', fontWeight: 700 }}>
+                      {departureCountdown(trip)}
+                    </span>
+                  </div>
                   <div style={{ fontSize: 13, color: 'var(--text-lo)', marginTop: 4 }}>
                     {trip.destinations || '—'} · {formatDateRange(trip)} · {tripDays(trip)} day(s)
                   </div>
@@ -344,6 +376,23 @@ export default function PackingPage() {
                   {(trip.weatherConditions || trip.weatherLow != null) && (
                     <div style={{ fontSize: 12.5, color: 'var(--text-lo)', marginTop: 4 }}>
                       🌦️ {trip.weatherLow != null ? `${trip.weatherLow}°–${trip.weatherHigh ?? '?'}° · ` : ''}{trip.weatherConditions}
+                    </div>
+                  )}
+                  {trip.weatherDaily && trip.weatherDaily.length > 0 && (
+                    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginTop: 12, paddingBottom: 2 }}>
+                      {trip.weatherDaily.map((d, i) => (
+                        <div key={i} style={{
+                          flexShrink: 0, minWidth: 64, textAlign: 'center', padding: '8px 6px', borderRadius: 12,
+                          background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)',
+                        }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)' }}>{d.day || `Day ${i + 1}`}</div>
+                          <div style={{ fontSize: 22, margin: '4px 0' }}>{conditionEmoji(d.conditions)}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700 }}>
+                            {d.high != null ? `${d.high}°` : '—'}
+                            <span style={{ color: 'var(--text-lo)', fontWeight: 500 }}> {d.low != null ? `${d.low}°` : ''}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

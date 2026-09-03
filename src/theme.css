@@ -1,0 +1,51 @@
+:root {
+  --radius-lg: 28px;
+  --radius-md: 20px;
+  --radius-sm: 14px;
+  --safe-margin: clamp(16px, 3vw, 36px);
+  --touch-min: 56px;
+  --font-display: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --card-alpha: 0.55;
+  --transition-fast: 160ms cubic-bezier(.4,0,.2,1);
+  --transition-med: 320ms cubic-bezier(.4,0,.2,1);
+
+  --bg-0: #0c0716;
+  --bg-1: #150c26;
+  --bg-2: #1d1236;
+  --accent-1: #a855f7;
+  --accent-2: #ec4899;
+  --accent-3: #22d3ee;
+  --text-hi: #f5f3ff;
+  --text-lo: #b8aed8;
+  --card-bg: rgba(30, 20, 55, var(--card-alpha));
+  --card-border: rgba(255,255,255,0.09);
+  --grad-a: linear-gradient(135deg, #a855f7, #ec4899);
+}
+
+* { box-sizing: border-box; }
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: radial-gradient(circle at 15% 10%, var(--bg-2), var(--bg-0) 60%);
+  color: var(--text-hi);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+h1, h2, h3, .display { font-family: var(--font-display); }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+button { font-family: inherit; }
+
+.glass {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+}

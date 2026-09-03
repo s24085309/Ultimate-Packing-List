@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import type { Trip, PackingItem, DepartureTask, MasterPackingItem } from '../types';
-import { tripDays, statusLine, formatDateRange, type ExportModel } from './packingExport';
+import { tripDays, statusLine, formatDateRange, departureCountdown, conditionEmoji, type ExportModel } from './packingExport';
 
 const HEADER_FILL: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF9333EA' } };
 const HEADER_FONT = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -29,7 +29,7 @@ export async function buildTripXlsx(trip: Trip, allItems: PackingItem[], allTask
   const items = allItems.filter(i => i.tripId === trip.id);
   const tasks = allTasks.filter(t => t.tripId === trip.id);
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Spongie Ultimate Travel Packing List';
+  wb.creator = 'Ultimate Travel Packing List';
   wb.created = new Date();
 
   // Sheet 1 — Summary
@@ -38,6 +38,7 @@ export async function buildTripXlsx(trip: Trip, allItems: PackingItem[], allTask
   const status = statusLine(model);
   const summaryRows: [string, string | number][] = [
     ['Trip Name', trip.name],
+    ['Departure Countdown', departureCountdown(trip)],
     ['Destination(s)', trip.destinations],
     ['Dates', formatDateRange(trip)],
     ['Duration', `${tripDays(trip)} day(s)`],
@@ -50,11 +51,24 @@ export async function buildTripXlsx(trip: Trip, allItems: PackingItem[], allTask
     ['Departure Task Count', tasks.length],
     ['Final Readiness Status', `${status.emoji} ${status.text}`],
   ];
-  summary.addRow(['🧽 Spongie Ultimate Travel Packing List', '']);
+  summary.addRow(['🧽 Ultimate Travel Packing List', '']);
   summary.getRow(1).font = { bold: true, size: 14, color: { argb: 'FF9333EA' } };
   summary.addRow([]);
   for (const [label, value] of summaryRows) summary.addRow([label, value]);
   summary.getColumn(1).font = { bold: true };
+
+  if (trip.weatherDaily && trip.weatherDaily.length > 0) {
+    summary.addRow([]);
+    const forecastHeaderRow = summary.addRow(['Daily Forecast', 'High / Low', 'Conditions']);
+    forecastHeaderRow.font = { bold: true, color: { argb: 'FF9333EA' } };
+    trip.weatherDaily.forEach((d, i) => {
+      summary.addRow([
+        d.day || `Day ${i + 1}`,
+        d.high != null ? `${d.high}° / ${d.low ?? '?'}°` : '',
+        `${conditionEmoji(d.conditions)} ${d.conditions ?? ''}`,
+      ]);
+    });
+  }
 
   // Sheet 2 — Packing List
   const list = wb.addWorksheet('Packing List');
@@ -130,7 +144,7 @@ export async function buildTripXlsx(trip: Trip, allItems: PackingItem[], allTask
 
 export async function buildMasterXlsx(masterItems: MasterPackingItem[]): Promise<Blob> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Spongie Ultimate Travel Packing List';
+  wb.creator = 'Ultimate Travel Packing List';
   wb.created = new Date();
   const sheet = wb.addWorksheet('Master Library');
   sheet.columns = [
