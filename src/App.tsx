@@ -10,14 +10,22 @@ export default function App() {
 
   if (!ready) {
     return (
-      <div style={{ height: '100dvh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-lo)' }}>
+      <div style={{ height: '100dvh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-lo)', background: 'var(--bg-0)' }}>
         Loading your packing list…
       </div>
     );
   }
 
   return (
-    <div style={{ height: '100dvh', width: '100vw', padding: 'var(--safe-margin)', overflow: 'hidden' }}>
+    <div
+      style={{
+        height: '100dvh', width: '100vw', overflow: 'hidden',
+        paddingTop: 'max(var(--safe-margin), env(safe-area-inset-top))',
+        paddingBottom: 'max(var(--safe-margin), env(safe-area-inset-bottom))',
+        paddingLeft: 'max(var(--safe-margin), env(safe-area-inset-left))',
+        paddingRight: 'max(var(--safe-margin), env(safe-area-inset-right))',
+      }}
+    >
       <PackingPage />
     </div>
   );

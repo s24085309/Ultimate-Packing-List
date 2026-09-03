@@ -27,12 +27,17 @@
 html, body, #root {
   height: 100%;
   margin: 0;
+  overscroll-behavior: none;
+}
+html {
+  background: var(--bg-0);
 }
 body {
   background: radial-gradient(circle at 15% 10%, var(--bg-2), var(--bg-0) 60%);
   color: var(--text-hi);
   font-family: var(--font-body);
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
 }
 h1, h2, h3, .display { font-family: var(--font-display); }
 
