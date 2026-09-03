@@ -32,6 +32,8 @@ interface Store {
   updateMasterItem: (id: string, patch: Partial<Omit<MasterPackingItem, 'id'>>) => void;
   removeMasterItem: (id: string) => void;
   addMasterItemToTrip: (masterId: string, tripId: string) => void;
+  addAllMasterItemsToTrip: (tripId: string) => void;
+  removeMasterGroup: (group: string) => void;
 
   addDepartureTask: (tripId: string, text: string) => void;
   toggleDepartureTask: (id: string) => void;
@@ -67,6 +69,7 @@ export const useStore = create<Store>((set, get) => ({
     const trip: Trip = { ...t, id: uid(), createdAt: Date.now() };
     db.trips.put(trip);
     set({ trips: [...get().trips, trip].sort((a, b) => a.departureDate.localeCompare(b.departureDate)), activeTripId: trip.id });
+    get().addAllMasterItemsToTrip(trip.id);
     return trip.id;
   },
   updateTrip: (id, patch) => {
@@ -152,6 +155,27 @@ export const useStore = create<Store>((set, get) => ({
       packed: false, packLater: false, requiresCharging: m.requiresCharging, charged: false,
       favourite: false, isGift: m.isGift, giftFor: m.giftFor,
     });
+  },
+  addAllMasterItemsToTrip: (tripId) => {
+    const masterItems = get().masterPackingItems;
+    if (masterItems.length === 0) return;
+    const existing = new Set(get().packingItems.filter(i => i.tripId === tripId).map(i => `${i.group}::${i.name}`));
+    const created: PackingItem[] = masterItems
+      .filter(m => !existing.has(`${m.group}::${m.name}`))
+      .map(m => ({
+        id: uid(), tripId, group: m.group, name: m.name, qty: m.qty, notes: m.notes,
+        packed: false, packLater: false, requiresCharging: m.requiresCharging, charged: false,
+        favourite: false, isGift: m.isGift, giftFor: m.giftFor, createdAt: Date.now(),
+      }));
+    if (created.length === 0) return;
+    db.packingItems.bulkPut(created);
+    set({ packingItems: [...get().packingItems, ...created] });
+  },
+  removeMasterGroup: (group) => {
+    const ids = get().masterPackingItems.filter(i => (i.group || 'Other') === group).map(i => i.id);
+    if (ids.length === 0) return;
+    db.masterPackingItems.bulkDelete(ids);
+    set({ masterPackingItems: get().masterPackingItems.filter(i => !ids.includes(i.id)) });
   },
 
   addDepartureTask: (tripId, text) => {

@@ -390,12 +390,62 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
   );
 }
 
+function MasterGroupSection({ group, items }: { group: string; items: ReturnType<typeof useStore.getState>['masterPackingItems'] }) {
+  const addMasterItem = useStore(st => st.addMasterItem);
+  const removeMasterItem = useStore(st => st.removeMasterItem);
+  const removeMasterGroup = useStore(st => st.removeMasterGroup);
+  const addMasterItemToTrip = useStore(st => st.addMasterItemToTrip);
+  const activeTripId = useStore(st => st.activeTripId);
+  const [quickName, setQuickName] = useState('');
+
+  const quickAdd = () => {
+    if (!quickName.trim()) return;
+    addMasterItem({ name: quickName.trim(), group, qty: 1, requiresCharging: false, isGift: group === GIFTS_GROUP });
+    setQuickName('');
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-lo)' }}>{group} <span style={{ opacity: 0.6 }}>({items.length})</span></div>
+        <button
+          onClick={() => { if (confirm(`Remove the whole "${group}" group (${items.length} item${items.length === 1 ? '' : 's'}) from the master library?`)) removeMasterGroup(group); }}
+          title="Remove this whole group"
+          style={{ background: 'none', border: 'none', color: 'var(--text-lo)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}
+        >
+          <Trash2 size={14} /> Remove group
+        </button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {items.map(i => (
+          <div key={i.id} className={s.touchRow}>
+            <div style={{ flex: 1 }}>
+              {i.name}{i.isGift && <span className={s.pill} style={{ marginLeft: 8 }}>🎁 {i.giftFor || 'gift'}</span>}
+            </div>
+            {activeTripId && (
+              <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => addMasterItemToTrip(i.id, activeTripId)}>
+                Add to trip
+              </button>
+            )}
+            <button onClick={() => removeMasterItem(i.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
+          </div>
+        ))}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            className={s.input} style={{ height: 38, fontSize: 13 }} placeholder={`Quick add to ${group}…`}
+            value={quickName} onChange={e => setQuickName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && quickAdd()}
+          />
+          <button className={s.btnGhost} onClick={quickAdd} style={{ width: 38, height: 38, padding: 0, flexShrink: 0 }}><Plus size={16} /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const masterItems = useStore(st => st.masterPackingItems);
   const addMasterItem = useStore(st => st.addMasterItem);
-  const removeMasterItem = useStore(st => st.removeMasterItem);
-  const addMasterItemToTrip = useStore(st => st.addMasterItemToTrip);
-  const activeTripId = useStore(st => st.activeTripId);
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
   const [isGift, setIsGift] = useState(false);
@@ -425,11 +475,12 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><X size={22} /></button>
         </div>
         <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-lo)' }}>
-          Keep every item you might ever pack here, then add the ones you need to a trip with one tap.
+          Keep every item you might ever pack here — new trips are seeded from this list automatically.
+          Type a new group name below (or in a group's own quick-add box) to create it instantly; use "Remove group" to delete one in one tap.
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <input className={s.input} placeholder="Item name" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
-          <input className={s.input} style={{ width: 140 }} placeholder="Group" list="packing-groups" value={group} onChange={e => setGroup(e.target.value)} />
+          <input className={s.input} style={{ width: 140 }} placeholder="Group (new or existing)" list="packing-groups" value={group} onChange={e => setGroup(e.target.value)} />
           <button className={s.btnPrimary} onClick={submit} style={{ width: 48, padding: 0, flexShrink: 0 }}><Plus size={18} /></button>
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
@@ -442,26 +493,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {groups.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>Your master library is empty — add items above.</div>}
-          {groups.map(([g, items]) => (
-            <div key={g}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-lo)', marginBottom: 6 }}>{g}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {items.map(i => (
-                  <div key={i.id} className={s.touchRow}>
-                    <div style={{ flex: 1 }}>
-                      {i.name}{i.isGift && <span className={s.pill} style={{ marginLeft: 8 }}>🎁 {i.giftFor || 'gift'}</span>}
-                    </div>
-                    {activeTripId && (
-                      <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => addMasterItemToTrip(i.id, activeTripId)}>
-                        Add to trip
-                      </button>
-                    )}
-                    <button onClick={() => removeMasterItem(i.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+          {groups.map(([g, items]) => <MasterGroupSection key={g} group={g} items={items} />)}
         </div>
       </div>
     </div>
