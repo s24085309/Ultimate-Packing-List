@@ -46,6 +46,22 @@ export interface GroupedItems {
   items: PackingItem[];
 }
 
+// The category order from the original packing spreadsheet. Groups are kept in this
+// order everywhere (trip view, PDF/Word/Excel/HTML export, Master Library) instead of
+// being re-alphabetized — any group not in this list keeps its natural first-seen order.
+export const CANONICAL_GROUP_ORDER = [
+  '🧼 Hygiene', '👖 Clothes', '🛝 Basics', '🏫 School', '📝 Pre-Trip Prep',
+  '✈️ Travelling Docs', '🧑‍💻 Technology', '🎁 Gifts',
+];
+
+export function sortGroupsCanonical<T extends { group: string }>(groups: T[]): T[] {
+  const rank = new Map(CANONICAL_GROUP_ORDER.map((g, i) => [g, i]));
+  return groups
+    .map((g, i) => ({ g, i, r: rank.has(g.group) ? rank.get(g.group)! : CANONICAL_GROUP_ORDER.length + i }))
+    .sort((a, b) => a.r - b.r)
+    .map(x => x.g);
+}
+
 export interface ExportModel {
   trip: Trip;
   days: number;
@@ -70,7 +86,7 @@ function groupBy(items: PackingItem[]): GroupedItems[] {
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(item);
   }
-  return Array.from(map.entries()).map(([group, items]) => ({ group, items }));
+  return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items })));
 }
 
 export function tripDays(trip: Trip): number {
@@ -101,7 +117,7 @@ export function buildExportModel(
     ? items.filter(i => !i.packLater)
     : items;
 
-  const groups = groupBy(mainItems).sort((a, b) => a.group.localeCompare(b.group));
+  const groups = groupBy(mainItems);
 
   const packLaterItems = viewFilter === 'all' && options.includePackLater
     ? allItems.filter(i => i.tripId === trip.id && i.packLater && (options.includePacked || !i.packed))
@@ -140,9 +156,7 @@ export function buildMasterExportModel(masterItems: MasterPackingItem[]): Master
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(item);
   }
-  const groups = Array.from(map.entries())
-    .map(([group, items]) => ({ group, items }))
-    .sort((a, b) => a.group.localeCompare(b.group));
+  const groups = sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items })));
   return { groups, generatedAt: new Date() };
 }
 

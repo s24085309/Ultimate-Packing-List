@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
-import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, conditionEmoji, type ViewFilter } from '../lib/packingExport';
+import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, conditionEmoji, sortGroupsCanonical, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity } from '../types';
 import s from '../widgets/shared.module.css';
@@ -512,7 +512,8 @@ function MasterArchiveModal({ onClose }: { onClose: () => void }) {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items })))
+      .map(({ group, items }) => [group, items] as const);
   }, [archived]);
 
   return (
@@ -574,7 +575,8 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items })))
+      .map(({ group, items }) => [group, items] as const);
   }, [activeItems]);
 
   const submit = () => {
