@@ -103,16 +103,16 @@ function WeatherDayRow({ day, cities, onChange, onRemove, onRefetch }: {
     setRefetching(false);
   };
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: cities.length > 1 ? '1fr 0.7fr 0.7fr 1.2fr 1.1fr auto' : '1.4fr 0.8fr 0.8fr 1.4fr auto', gap: 6, alignItems: 'center' }}>
-      <input className={s.input} style={{ height: 44 }} placeholder="Day (e.g. Thu)" value={day.day} onChange={e => onChange({ ...day, day: e.target.value })} />
-      <input type="number" className={s.input} style={{ height: 44 }} placeholder="High°" value={day.high ?? ''} onChange={e => onChange({ ...day, high: e.target.value ? Number(e.target.value) : undefined })} />
-      <input type="number" className={s.input} style={{ height: 44 }} placeholder="Low°" value={day.low ?? ''} onChange={e => onChange({ ...day, low: e.target.value ? Number(e.target.value) : undefined })} />
-      <input className={s.input} style={{ height: 44 }} placeholder="Conditions (e.g. Sunny)" value={day.conditions ?? ''} onChange={e => onChange({ ...day, conditions: e.target.value })} />
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--card-border)' }}>
+      <input className={s.input} style={{ height: 40, flex: '1 1 84px', minWidth: 70, padding: '0 10px', fontSize: 13 }} placeholder="Day (e.g. Thu)" value={day.day} onChange={e => onChange({ ...day, day: e.target.value })} />
+      <input type="number" className={s.input} style={{ height: 40, flex: '1 1 56px', minWidth: 50, padding: '0 8px', fontSize: 13 }} placeholder="High°" value={day.high ?? ''} onChange={e => onChange({ ...day, high: e.target.value ? Number(e.target.value) : undefined })} />
+      <input type="number" className={s.input} style={{ height: 40, flex: '1 1 56px', minWidth: 50, padding: '0 8px', fontSize: 13 }} placeholder="Low°" value={day.low ?? ''} onChange={e => onChange({ ...day, low: e.target.value ? Number(e.target.value) : undefined })} />
+      <input className={s.input} style={{ height: 40, flex: '2 1 130px', minWidth: 100, padding: '0 10px', fontSize: 13 }} placeholder="Conditions (e.g. Sunny)" value={day.conditions ?? ''} onChange={e => onChange({ ...day, conditions: e.target.value })} />
       {cities.length > 1 && (
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: '1 1 110px', minWidth: 90 }}>
           <select
             className={s.input}
-            style={{ height: 44, fontSize: 12.5 }}
+            style={{ height: 40, fontSize: 12.5, minWidth: 0, flex: 1 }}
             value={day.city ?? ''}
             onChange={e => { onChange({ ...day, city: e.target.value }); doRefetch(e.target.value); }}
           >
@@ -131,7 +131,7 @@ function WeatherDayRow({ day, cities, onChange, onRemove, onRefetch }: {
           )}
         </div>
       )}
-      <button onClick={onRemove} style={{ background: 'none', border: 'none', color: 'var(--text-lo)', width: 32, flexShrink: 0 }}><Trash2 size={15} /></button>
+      <button onClick={onRemove} style={{ background: 'none', border: 'none', color: 'var(--text-lo)', width: 28, flexShrink: 0 }}><Trash2 size={15} /></button>
     </div>
   );
 }
@@ -245,14 +245,14 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
     <div className="glass" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <input className={s.input} placeholder="Trip name (e.g. Portugal Summer 2026)" value={draft.name} onChange={e => set('name', e.target.value)} />
       <input className={s.input} placeholder="Destination(s)" value={draft.destinations} onChange={e => set('destinations', e.target.value)} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, minWidth: 0 }}>
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, color: 'var(--text-lo)', marginBottom: 4 }}>DEPARTURE</div>
-          <input type="date" className={s.input} value={draft.departureDate} onChange={e => set('departureDate', e.target.value)} />
+          <input type="date" className={s.input} style={{ width: '100%', minWidth: 0, padding: '0 8px', fontSize: 14.5 }} value={draft.departureDate} onChange={e => set('departureDate', e.target.value)} />
         </div>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, color: 'var(--text-lo)', marginBottom: 4 }}>RETURN</div>
-          <input type="date" className={s.input} value={draft.returnDate} onChange={e => set('returnDate', e.target.value)} />
+          <input type="date" className={s.input} style={{ width: '100%', minWidth: 0, padding: '0 8px', fontSize: 14.5 }} value={draft.returnDate} onChange={e => set('returnDate', e.target.value)} />
         </div>
       </div>
       <input className={s.input} placeholder="Accommodation" value={draft.accommodation} onChange={e => set('accommodation', e.target.value)} />
@@ -312,9 +312,9 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
         </button>
         {weatherError && <div style={{ fontSize: 12, color: '#fda4af' }}>{weatherError}</div>}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <input type="number" className={s.input} placeholder="Low °" value={draft.weatherLow ?? ''} onChange={e => set('weatherLow', e.target.value ? Number(e.target.value) : undefined)} />
-          <input type="number" className={s.input} placeholder="High °" value={draft.weatherHigh ?? ''} onChange={e => set('weatherHigh', e.target.value ? Number(e.target.value) : undefined)} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, minWidth: 0 }}>
+          <input type="number" className={s.input} style={{ minWidth: 0 }} placeholder="Low °" value={draft.weatherLow ?? ''} onChange={e => set('weatherLow', e.target.value ? Number(e.target.value) : undefined)} />
+          <input type="number" className={s.input} style={{ minWidth: 0 }} placeholder="High °" value={draft.weatherHigh ?? ''} onChange={e => set('weatherHigh', e.target.value ? Number(e.target.value) : undefined)} />
         </div>
         <input className={s.input} placeholder="Conditions (e.g. Sunny, occasional rain)" value={draft.weatherConditions} onChange={e => set('weatherConditions', e.target.value)} />
         <input className={s.input} placeholder="Weather notes for packing" value={draft.weatherNotes} onChange={e => set('weatherNotes', e.target.value)} />
