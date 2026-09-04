@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.8';
+export const APP_VERSION = '6.9.9';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -114,6 +114,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-04',
     category: 'New Feature',
     description: 'Added an A− / 100% / A+ text-size control right in the main header, and packing groups now lay out in 2-3 columns on wider screens like an iPad instead of one long single column.',
+  },
+  {
+    version: '6.9.9',
+    date: '2026-09-04',
+    category: 'UI / Design Change',
+    description: 'Simplified the text-size control to just A− and A+ buttons, removing the percentage readout in between.',
   },
 ];
 

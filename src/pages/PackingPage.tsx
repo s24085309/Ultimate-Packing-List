@@ -8,7 +8,7 @@ import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
 import SettingsModal from '../components/SettingsModal';
 import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
-import { FONT_SIZE_ORDER, FONT_SIZE_SCALE } from '../lib/appearance';
+import { FONT_SIZE_ORDER } from '../lib/appearance';
 import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
@@ -742,15 +742,11 @@ function TextSizeControl() {
     <div style={{ display: 'flex', alignItems: 'center', borderRadius: 999, border: '1px solid var(--card-border)', background: 'rgba(255,255,255,0.05)', overflow: 'hidden', flexShrink: 0 }}>
       <button
         onClick={() => step(-1)} disabled={idx <= 0} title="Smaller text"
-        style={{ background: 'none', border: 'none', color: idx <= 0 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: idx <= 0 ? 0.4 : 1, minHeight: 40, padding: '0 12px', fontSize: 13, fontWeight: 800 }}
+        style={{ background: 'none', border: 'none', color: idx <= 0 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: idx <= 0 ? 0.4 : 1, minHeight: 40, padding: '0 14px', fontSize: 13, fontWeight: 800 }}
       >A−</button>
       <button
-        onClick={() => updateSettings({ fontSize: 'medium' })} title="Reset text size"
-        style={{ background: 'none', border: 'none', borderLeft: '1px solid var(--card-border)', borderRight: '1px solid var(--card-border)', color: 'var(--text-lo)', minHeight: 40, padding: '0 10px', fontSize: 12, fontWeight: 700, minWidth: 46 }}
-      >{Math.round(FONT_SIZE_SCALE[fontSize] * 100)}%</button>
-      <button
         onClick={() => step(1)} disabled={idx >= FONT_SIZE_ORDER.length - 1} title="Bigger text"
-        style={{ background: 'none', border: 'none', color: idx >= FONT_SIZE_ORDER.length - 1 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: idx >= FONT_SIZE_ORDER.length - 1 ? 0.4 : 1, minHeight: 40, padding: '0 12px', fontSize: 16, fontWeight: 800 }}
+        style={{ background: 'none', border: 'none', borderLeft: '1px solid var(--card-border)', color: idx >= FONT_SIZE_ORDER.length - 1 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: idx >= FONT_SIZE_ORDER.length - 1 ? 0.4 : 1, minHeight: 40, padding: '0 14px', fontSize: 16, fontWeight: 800 }}
       >A+</button>
     </div>
   );
