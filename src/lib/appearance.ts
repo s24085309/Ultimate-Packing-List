@@ -16,6 +16,8 @@ export const FONT_SIZE_LABEL: Record<FontSizeId, string> = {
   small: 'Small', medium: 'Medium', large: 'Large', xlarge: 'Extra Large',
 };
 
+export const FONT_SIZE_ORDER: FontSizeId[] = ['small', 'medium', 'large', 'xlarge'];
+
 export function applyAppearance(settings: { fontFamily: FontFamilyId; textColor?: string; accentColor: string; themeMode: ThemeMode }) {
   const root = document.documentElement;
   const fonts = FONT_STACKS[settings.fontFamily];

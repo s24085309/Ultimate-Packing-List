@@ -8,6 +8,7 @@ import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
 import SettingsModal from '../components/SettingsModal';
 import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
+import { FONT_SIZE_ORDER, FONT_SIZE_SCALE } from '../lib/appearance';
 import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
@@ -727,6 +728,34 @@ function PastTripsModal({ trips, onOpenTrip, onClose }: { trips: Trip[]; onOpenT
   );
 }
 
+function TextSizeControl() {
+  const fontSize = useStore(st => st.settings.fontSize);
+  const updateSettings = useStore(st => st.updateSettings);
+  const idx = FONT_SIZE_ORDER.indexOf(fontSize);
+
+  const step = (delta: number) => {
+    const next = FONT_SIZE_ORDER[Math.min(FONT_SIZE_ORDER.length - 1, Math.max(0, idx + delta))];
+    updateSettings({ fontSize: next });
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', borderRadius: 999, border: '1px solid var(--card-border)', background: 'rgba(255,255,255,0.05)', overflow: 'hidden', flexShrink: 0 }}>
+      <button
+        onClick={() => step(-1)} disabled={idx <= 0} title="Smaller text"
+        style={{ background: 'none', border: 'none', color: idx <= 0 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: idx <= 0 ? 0.4 : 1, minHeight: 40, padding: '0 12px', fontSize: 13, fontWeight: 800 }}
+      >A−</button>
+      <button
+        onClick={() => updateSettings({ fontSize: 'medium' })} title="Reset text size"
+        style={{ background: 'none', border: 'none', borderLeft: '1px solid var(--card-border)', borderRight: '1px solid var(--card-border)', color: 'var(--text-lo)', minHeight: 40, padding: '0 10px', fontSize: 12, fontWeight: 700, minWidth: 46 }}
+      >{Math.round(FONT_SIZE_SCALE[fontSize] * 100)}%</button>
+      <button
+        onClick={() => step(1)} disabled={idx >= FONT_SIZE_ORDER.length - 1} title="Bigger text"
+        style={{ background: 'none', border: 'none', color: idx >= FONT_SIZE_ORDER.length - 1 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: idx >= FONT_SIZE_ORDER.length - 1 ? 0.4 : 1, minHeight: 40, padding: '0 12px', fontSize: 16, fontWeight: 800 }}
+      >A+</button>
+    </div>
+  );
+}
+
 export default function PackingPage() {
   const trips = useStore(st => st.trips);
   const activeTripId = useStore(st => st.activeTripId);
@@ -776,6 +805,7 @@ export default function PackingPage() {
           <span title={`App version ${APP_VERSION}`} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)', opacity: 0.6, whiteSpace: 'nowrap' }}>v{APP_VERSION}</span>
         </div>
         <div className={s.row}>
+          <TextSizeControl />
           {pastTrips.length > 0 && (
             <button className={s.btnGhost} onClick={() => setPastTripsOpen(true)}><History size={18} /> Past Trips ({pastTrips.length})</button>
           )}
@@ -913,7 +943,7 @@ export default function PackingPage() {
 
           <AddItemForm tripId={trip.id} groups={groups} />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div className="packingGroupsGrid">
             {visibleGroups.length === 0 && (
               <div className={s.emptyState} style={{ minHeight: 120 }}>
                 <div style={{ fontSize: 13.5 }}>Nothing here yet.</div>
