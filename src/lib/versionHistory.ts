@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.3';
+export const APP_VERSION = '6.9.4';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -84,6 +84,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-04',
     category: 'New Feature',
     description: 'Master Library items can now be reordered within their group with ↑/↓ controls (respected everywhere: the library, exports, and new-trip seeding), then locked with a "Lock Order" toggle to hide those controls and keep the order from shifting by accident.',
+  },
+  {
+    version: '6.9.4',
+    date: '2026-09-04',
+    category: 'Bug Fix',
+    description: 'Each Master Library item now has a battery toggle to fix a wrongly-set "requires charging" flag directly (e.g. sunscreen incorrectly marked as needing charging), instead of only being fixable by delete-and-recreate.',
   },
 ];
 

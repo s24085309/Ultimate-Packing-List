@@ -449,6 +449,7 @@ function MasterGroupSection({ group, items, locked }: { group: string; items: Re
   const toggleMasterItemIgnored = useStore(st => st.toggleMasterItemIgnored);
   const addMasterItemToTrip = useStore(st => st.addMasterItemToTrip);
   const moveMasterItem = useStore(st => st.moveMasterItem);
+  const updateMasterItem = useStore(st => st.updateMasterItem);
   const activeTripId = useStore(st => st.activeTripId);
   const [quickName, setQuickName] = useState('');
   const [collapsed, setCollapsed] = useState(false);
@@ -495,8 +496,16 @@ function MasterGroupSection({ group, items, locked }: { group: string; items: Re
               )}
               <div style={{ flex: 1 }}>
                 {i.name}{i.isGift && <span className={s.pill} style={{ marginLeft: 8 }}>🎁 {i.giftFor || 'gift'}</span>}
+                {i.requiresCharging && <span className={s.pill} style={{ marginLeft: 8, background: 'rgba(34,211,238,0.15)', color: '#22d3ee' }}>🔋 charging</span>}
                 {i.ignored && <span className={s.pill} style={{ marginLeft: 8 }}>🙈 ignored</span>}
               </div>
+              <button
+                onClick={() => updateMasterItem(i.id, { requiresCharging: !i.requiresCharging })}
+                title={i.requiresCharging ? 'Remove the "requires charging" flag' : 'Mark as requiring charging'}
+                style={{ background: 'none', border: 'none', color: i.requiresCharging ? '#22d3ee' : 'var(--text-lo)' }}
+              >
+                {i.requiresCharging ? <BatteryCharging size={16} /> : <Battery size={16} />}
+              </button>
               {activeTripId && (
                 <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => addMasterItemToTrip(i.id, activeTripId)}>
                   Add to trip
