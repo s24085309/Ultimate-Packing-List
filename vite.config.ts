@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon-32.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Ultimate Packing List',
-        short_name: 'Packing List',
+        name: '🧽 Spongie — Ultimate Packing List',
+        short_name: '🧽 Spongie',
         description: 'Trips, a master packing library, and PDF/Word/Excel/HTML export.',
         start_url: '.',
         scope: '.',

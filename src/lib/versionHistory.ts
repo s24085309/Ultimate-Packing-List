@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.6';
+export const APP_VERSION = '6.9.7';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -102,6 +102,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-04',
     category: 'Bug Fix',
     description: 'Fixed the Departure/Return date fields overlapping and getting clipped on narrow phone screens, and the daily weather forecast row (Day/High/Low/Conditions) being cut off — both now resize and wrap to fit instead of overflowing.',
+  },
+  {
+    version: '6.9.7',
+    date: '2026-09-04',
+    category: 'UI / Design Change',
+    description: 'Renamed the app to "Spongie" (title, home-screen label, and in-app header), moved the version number to the top of Settings, and replaced the static daily-weather emoji with a small live-animated icon (falling rain/snow, pulsing sun, drifting clouds, flashing storm bolt).',
   },
 ];
 

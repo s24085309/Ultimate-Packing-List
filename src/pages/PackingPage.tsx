@@ -7,7 +7,8 @@ import {
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
 import SettingsModal from '../components/SettingsModal';
-import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, conditionEmoji, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
+import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
+import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
 import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity } from '../types';
@@ -771,7 +772,7 @@ export default function PackingPage() {
     <div style={{ height: '100%', overflowY: 'auto', padding: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 2vw, 32px)', margin: 0 }}>🧽 Ultimate Travel Packing List</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 2vw, 32px)', margin: 0 }}>🧽 Spongie's Ultimate Travel Packing List</h1>
           <span title={`App version ${APP_VERSION}`} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)', opacity: 0.6, whiteSpace: 'nowrap' }}>v{APP_VERSION}</span>
         </div>
         <div className={s.row}>
@@ -859,7 +860,7 @@ export default function PackingPage() {
                           background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)',
                         }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)' }}>{d.day || `Day ${i + 1}`}</div>
-                          <div style={{ fontSize: 22, margin: '4px 0' }}>{conditionEmoji(d.conditions)}</div>
+                          <div style={{ margin: '4px 0' }}><AnimatedWeatherIcon conditions={d.conditions} size={28} /></div>
                           <div style={{ fontSize: 12, fontWeight: 700 }}>
                             {d.high != null ? `${d.high}°` : '—'}
                             <span style={{ color: 'var(--text-lo)', fontWeight: 500 }}> {d.low != null ? `${d.low}°` : ''}</span>

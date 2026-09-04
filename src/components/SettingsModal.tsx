@@ -71,9 +71,37 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(5,3,10,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
       <div className="glass" style={{ width: 'min(560px,100%)', maxHeight: '85vh', overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 800, fontSize: 18 }}>⚙️ Settings</span>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontWeight: 800, fontSize: 18 }}>⚙️ Settings</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-lo)', opacity: 0.7 }}>v{APP_VERSION}</span>
+          </span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><X size={22} /></button>
         </div>
+
+        <Section title="📜 VERSION">
+          <div className={s.row} style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13.5, color: 'var(--text-lo)' }}>App version <b style={{ color: 'var(--text-hi)' }}>v{APP_VERSION}</b></span>
+            <button
+              onClick={requestVersionHistory}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, minHeight: 46, padding: '0 18px',
+                borderRadius: 14, cursor: 'pointer',
+                background: 'linear-gradient(135deg, #FF6EC7, #FF3FAE)',
+                border: '1px solid #FFB3E6', color: '#fff', fontWeight: 800, fontSize: 14,
+                boxShadow: '0 0 14px 2px rgba(255,110,199,0.55)',
+                animation: 'settingsVersionGlow 2.4s ease-in-out infinite',
+              }}
+            >
+              📜 Version History
+            </button>
+            <style>{`
+              @keyframes settingsVersionGlow {
+                0%, 100% { box-shadow: 0 0 10px 1px rgba(255,110,199,0.45); }
+                50% { box-shadow: 0 0 20px 4px rgba(255,63,174,0.75); }
+              }
+            `}</style>
+          </div>
+        </Section>
 
         <Section title="🔤 FONT">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -182,31 +210,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
               <button className={s.btnPrimary} disabled={pinDraft.length < 4} onClick={setPin}>Set Password</button>
             </div>
           )}
-        </Section>
-
-        <Section title="📜 VERSION">
-          <div className={s.row} style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13.5, color: 'var(--text-lo)' }}>App version <b style={{ color: 'var(--text-hi)' }}>v{APP_VERSION}</b></span>
-            <button
-              onClick={requestVersionHistory}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, minHeight: 46, padding: '0 18px',
-                borderRadius: 14, cursor: 'pointer',
-                background: 'linear-gradient(135deg, #FF6EC7, #FF3FAE)',
-                border: '1px solid #FFB3E6', color: '#fff', fontWeight: 800, fontSize: 14,
-                boxShadow: '0 0 14px 2px rgba(255,110,199,0.55)',
-                animation: 'settingsVersionGlow 2.4s ease-in-out infinite',
-              }}
-            >
-              📜 Version History
-            </button>
-            <style>{`
-              @keyframes settingsVersionGlow {
-                0%, 100% { box-shadow: 0 0 10px 1px rgba(255,110,199,0.45); }
-                50% { box-shadow: 0 0 20px 4px rgba(255,63,174,0.75); }
-              }
-            `}</style>
-          </div>
         </Section>
 
         <Section title="💾 BACKUP">
