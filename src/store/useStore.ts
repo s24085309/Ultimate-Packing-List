@@ -3,6 +3,7 @@ import { db } from './db';
 import { seedDemoData } from './demoData';
 import type { Trip, PackingItem, MasterPackingItem, DepartureTask, AppSettings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
+import { sortMasterItems } from '../lib/packingExport';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -41,6 +42,7 @@ interface Store {
   deleteMasterItemPermanently: (id: string) => void;
   toggleMasterItemIgnored: (id: string) => void;
   ensureMasterItem: (item: Omit<MasterPackingItem, 'id'>) => void;
+  moveMasterItem: (id: string, direction: 'up' | 'down') => void;
 
   addDepartureTask: (tripId: string, text: string) => void;
   toggleDepartureTask: (id: string) => void;
@@ -177,6 +179,21 @@ export const useStore = create<Store>((set, get) => ({
     const item = get().masterPackingItems.find(i => i.id === id);
     if (!item) return;
     get().updateMasterItem(id, { ignored: !item.ignored });
+  },
+  moveMasterItem: (id, direction) => {
+    const item = get().masterPackingItems.find(i => i.id === id);
+    if (!item) return;
+    const group = item.group || 'Other';
+    const groupItems = sortMasterItems(get().masterPackingItems.filter(i => !i.archived && (i.group || 'Other') === group));
+    const idx = groupItems.findIndex(i => i.id === id);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (idx === -1 || swapIdx < 0 || swapIdx >= groupItems.length) return;
+    const reordered = [...groupItems];
+    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+    const renumbered = reordered.map((it, i) => ({ ...it, order: i }));
+    db.masterPackingItems.bulkPut(renumbered);
+    const byId = new Map(renumbered.map(i => [i.id, i]));
+    set({ masterPackingItems: get().masterPackingItems.map(i => byId.get(i.id) ?? i) });
   },
   addMasterItemToTrip: (masterId, tripId) => {
     const m = get().masterPackingItems.find(i => i.id === masterId);

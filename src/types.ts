@@ -65,6 +65,7 @@ export interface MasterPackingItem {
   giftFor?: string;
   archived?: boolean; // soft-deleted — hidden from the active library, restorable, or permanently deletable from the Archive
   ignored?: boolean; // stays in the active library but is skipped when auto-seeding new trips
+  order?: number; // manual sort position within its group — undefined falls back to natural array order
 }
 
 export interface DepartureTask {
@@ -86,6 +87,7 @@ export interface AppSettings {
   textColor?: string; // hex — overrides the theme's default text colour when set
   accentColor: string; // hex — overrides the gradient/accent colour
   adminPassword?: string; // gates the Version History panel
+  masterListLocked?: boolean; // when true, hides the Master Library's reorder controls
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -94,6 +96,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   fontFamily: 'default',
   fontSize: 'medium',
   accentColor: '#a855f7',
+  masterListLocked: false,
 };
 
 // Each theme's own readable default — used whenever textColor isn't explicitly overridden.

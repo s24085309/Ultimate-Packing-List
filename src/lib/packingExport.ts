@@ -62,6 +62,15 @@ export function sortGroupsCanonical<T extends { group: string }>(groups: T[]): T
     .map(x => x.g);
 }
 
+// Sorts Master Library items by their manually-set `order` (from drag/reorder controls),
+// falling back to the array's own order for items that have never been reordered.
+export function sortMasterItems<T extends { order?: number }>(items: T[]): T[] {
+  return items
+    .map((item, index) => ({ item, effective: item.order ?? index }))
+    .sort((a, b) => a.effective - b.effective)
+    .map(x => x.item);
+}
+
 export interface ExportModel {
   trip: Trip;
   days: number;
@@ -156,7 +165,7 @@ export function buildMasterExportModel(masterItems: MasterPackingItem[]): Master
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(item);
   }
-  const groups = sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items })));
+  const groups = sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items: sortMasterItems(items) })));
   return { groups, generatedAt: new Date() };
 }
 

@@ -2,12 +2,12 @@ import { useMemo, useState, type ReactNode } from 'react';
 import {
   Plus, Trash2, BatteryCharging, Battery, Star, Download, Library,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
-  Archive, Eye, EyeOff, RotateCcw, Settings, History,
+  Archive, Eye, EyeOff, RotateCcw, Settings, History, Lock, Unlock, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
 import SettingsModal from '../components/SettingsModal';
-import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, conditionEmoji, sortGroupsCanonical, type ViewFilter } from '../lib/packingExport';
+import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, conditionEmoji, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
 import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity } from '../types';
@@ -442,12 +442,13 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
   );
 }
 
-function MasterGroupSection({ group, items }: { group: string; items: ReturnType<typeof useStore.getState>['masterPackingItems'] }) {
+function MasterGroupSection({ group, items, locked }: { group: string; items: ReturnType<typeof useStore.getState>['masterPackingItems']; locked: boolean }) {
   const addMasterItem = useStore(st => st.addMasterItem);
   const archiveMasterItem = useStore(st => st.archiveMasterItem);
   const archiveMasterGroup = useStore(st => st.archiveMasterGroup);
   const toggleMasterItemIgnored = useStore(st => st.toggleMasterItemIgnored);
   const addMasterItemToTrip = useStore(st => st.addMasterItemToTrip);
+  const moveMasterItem = useStore(st => st.moveMasterItem);
   const activeTripId = useStore(st => st.activeTripId);
   const [quickName, setQuickName] = useState('');
   const [collapsed, setCollapsed] = useState(false);
@@ -474,8 +475,24 @@ function MasterGroupSection({ group, items }: { group: string; items: ReturnType
       />
       {!collapsed && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
-          {items.map(i => (
+          {items.map((i, idx) => (
             <div key={i.id} className={s.touchRow} style={i.ignored ? { opacity: 0.55 } : undefined}>
+              {!locked && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+                  <button
+                    onClick={() => moveMasterItem(i.id, 'up')} disabled={idx === 0} title="Move up"
+                    style={{ background: 'none', border: 'none', color: idx === 0 ? 'rgba(184,174,216,0.25)' : 'var(--text-lo)', padding: 2 }}
+                  >
+                    <ArrowUp size={14} />
+                  </button>
+                  <button
+                    onClick={() => moveMasterItem(i.id, 'down')} disabled={idx === items.length - 1} title="Move down"
+                    style={{ background: 'none', border: 'none', color: idx === items.length - 1 ? 'rgba(184,174,216,0.25)' : 'var(--text-lo)', padding: 2 }}
+                  >
+                    <ArrowDown size={14} />
+                  </button>
+                </div>
+              )}
               <div style={{ flex: 1 }}>
                 {i.name}{i.isGift && <span className={s.pill} style={{ marginLeft: 8 }}>🎁 {i.giftFor || 'gift'}</span>}
                 {i.ignored && <span className={s.pill} style={{ marginLeft: 8 }}>🙈 ignored</span>}
@@ -522,7 +539,7 @@ function MasterArchiveModal({ onClose }: { onClose: () => void }) {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
-    return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items })))
+    return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items: sortMasterItems(items) })))
       .map(({ group, items }) => [group, items] as const);
   }, [archived]);
 
@@ -569,6 +586,8 @@ function MasterArchiveModal({ onClose }: { onClose: () => void }) {
 function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const masterItems = useStore(st => st.masterPackingItems);
   const addMasterItem = useStore(st => st.addMasterItem);
+  const locked = useStore(st => st.settings.masterListLocked ?? false);
+  const updateSettings = useStore(st => st.updateSettings);
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
   const [isGift, setIsGift] = useState(false);
@@ -585,7 +604,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
-    return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items })))
+    return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items: sortMasterItems(items) })))
       .map(({ group, items }) => [group, items] as const);
   }, [activeItems]);
 
@@ -601,6 +620,13 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 800, fontSize: 18 }}>🗃️ Master Packing Library</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5 }}
+              onClick={() => updateSettings({ masterListLocked: !locked })}
+              title={locked ? 'Unlock to reorder items again' : 'Lock the current order — hides the reorder arrows'}
+            >
+              {locked ? <Lock size={14} /> : <Unlock size={14} />} {locked ? 'Locked' : 'Lock Order'}
+            </button>
             <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5 }} onClick={() => setArchiveOpen(true)}>
               <Archive size={14} /> Archive{archivedCount > 0 ? ` (${archivedCount})` : ''}
             </button>
@@ -609,6 +635,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
         </div>
         <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-lo)' }}>
           Nothing here is ever deleted outright — every item added to a trip is saved here too, and every trip you create is seeded from this list.
+          Use ↑/↓ to reorder items within a group, then "Lock Order" to hide those controls and keep it from shifting by accident.
           Use 👁️ to ignore an item (it stays here but skips new trips) or 🗄️ to archive it — archived items move to the Archive, where you can restore them or delete them for good.
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -626,7 +653,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {groups.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>Your master library is empty — add items above.</div>}
-          {groups.map(([g, items]) => <MasterGroupSection key={g} group={g} items={items} />)}
+          {groups.map(([g, items]) => <MasterGroupSection key={g} group={g} items={items} locked={locked} />)}
         </div>
       </div>
       {archiveOpen && <MasterArchiveModal onClose={() => setArchiveOpen(false)} />}
