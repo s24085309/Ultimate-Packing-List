@@ -73,3 +73,31 @@ export interface DepartureTask {
   text: string;
   done: boolean;
 }
+
+export type ThemeMode = 'dark' | 'light';
+export type FontFamilyId = 'default' | 'rounded' | 'serif' | 'mono';
+export type FontSizeId = 'small' | 'medium' | 'large' | 'xlarge';
+
+export interface AppSettings {
+  id: 'settings';
+  themeMode: ThemeMode;
+  fontFamily: FontFamilyId;
+  fontSize: FontSizeId;
+  textColor?: string; // hex — overrides the theme's default text colour when set
+  accentColor: string; // hex — overrides the gradient/accent colour
+  adminPassword?: string; // gates the Version History panel
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  id: 'settings',
+  themeMode: 'dark',
+  fontFamily: 'default',
+  fontSize: 'medium',
+  accentColor: '#a855f7',
+};
+
+// Each theme's own readable default — used whenever textColor isn't explicitly overridden.
+export const THEME_DEFAULT_TEXT_COLOR: Record<ThemeMode, string> = {
+  dark: '#f5f3ff',
+  light: '#201a2e',
+};

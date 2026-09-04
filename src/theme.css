@@ -23,6 +23,17 @@
   --grad-a: linear-gradient(135deg, #a855f7, #ec4899);
 }
 
+:root[data-theme="light"] {
+  --bg-0: #f6f3fb;
+  --bg-1: #ffffff;
+  --bg-2: #efe8fb;
+  --text-hi: #201a2e;
+  --text-lo: #6b6280;
+  --card-bg: rgba(255, 255, 255, 0.72);
+  --card-border: rgba(32, 26, 46, 0.1);
+  --card-alpha: 0.72;
+}
+
 * { box-sizing: border-box; }
 html, body, #root {
   height: 100%;

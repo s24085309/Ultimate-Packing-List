@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { db } from './db';
 import { seedDemoData } from './demoData';
-import type { Trip, PackingItem, MasterPackingItem, DepartureTask } from '../types';
+import type { Trip, PackingItem, MasterPackingItem, DepartureTask, AppSettings } from '../types';
+import { DEFAULT_SETTINGS } from '../types';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -11,10 +12,12 @@ interface Store {
   packingItems: PackingItem[];
   masterPackingItems: MasterPackingItem[];
   departureTasks: DepartureTask[];
+  settings: AppSettings;
   activeTripId: string | null;
   setActiveTripId: (id: string | null) => void;
 
   init: () => Promise<void>;
+  updateSettings: (patch: Partial<Omit<AppSettings, 'id'>>) => void;
 
   addTrip: (t: Omit<Trip, 'id' | 'createdAt'>) => string;
   updateTrip: (id: string, patch: Partial<Omit<Trip, 'id'>>) => void;
@@ -45,6 +48,7 @@ interface Store {
 
   exportBackup: () => Promise<string>;
   importBackup: (json: string) => Promise<void>;
+  clearAllData: () => Promise<void>;
 }
 
 export const useStore = create<Store>((set, get) => ({
@@ -53,20 +57,29 @@ export const useStore = create<Store>((set, get) => ({
   packingItems: [],
   masterPackingItems: [],
   departureTasks: [],
+  settings: DEFAULT_SETTINGS,
   activeTripId: null,
   setActiveTripId: (id) => set({ activeTripId: id }),
 
   init: async () => {
     await seedDemoData();
-    const [trips, packingItems, masterPackingItems, departureTasks] = await Promise.all([
+    const [trips, packingItems, masterPackingItems, departureTasks, storedSettings] = await Promise.all([
       db.trips.toArray(), db.packingItems.toArray(), db.masterPackingItems.toArray(), db.departureTasks.toArray(),
+      db.settings.get('settings'),
     ]);
     const sortedTrips = trips.sort((a, b) => a.departureDate.localeCompare(b.departureDate));
+    const settings = storedSettings ? { ...DEFAULT_SETTINGS, ...storedSettings } : DEFAULT_SETTINGS;
+    if (!storedSettings) db.settings.put(settings);
     set({
-      trips: sortedTrips, packingItems, masterPackingItems, departureTasks,
+      trips: sortedTrips, packingItems, masterPackingItems, departureTasks, settings,
       activeTripId: sortedTrips[0]?.id ?? null,
       ready: true,
     });
+  },
+  updateSettings: (patch) => {
+    const updated = { ...get().settings, ...patch };
+    db.settings.put(updated);
+    set({ settings: updated });
   },
 
   addTrip: (t) => {
@@ -215,12 +228,13 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   exportBackup: async () => {
-    const [trips, packingItems, masterPackingItems, departureTasks] = await Promise.all([
+    const [trips, packingItems, masterPackingItems, departureTasks, settings] = await Promise.all([
       db.trips.toArray(), db.packingItems.toArray(), db.masterPackingItems.toArray(), db.departureTasks.toArray(),
+      db.settings.get('settings'),
     ]);
     return JSON.stringify({
-      version: 1, exportedAt: new Date().toISOString(),
-      trips, packingItems, masterPackingItems, departureTasks,
+      version: 2, exportedAt: new Date().toISOString(),
+      trips, packingItems, masterPackingItems, departureTasks, settings,
     }, null, 2);
   },
   importBackup: async (json) => {
@@ -235,10 +249,19 @@ export const useStore = create<Store>((set, get) => ({
       data.departureTasks?.length ? db.departureTasks.bulkAdd(data.departureTasks) : Promise.resolve(),
     ]);
     const importedTrips: Trip[] = data.trips ?? [];
+    const importedSettings = data.settings ? { ...DEFAULT_SETTINGS, ...data.settings } : get().settings;
+    if (data.settings) await db.settings.put(importedSettings);
     set({
       trips: importedTrips, packingItems: data.packingItems ?? [],
       masterPackingItems: data.masterPackingItems ?? [], departureTasks: data.departureTasks ?? [],
+      settings: importedSettings,
       activeTripId: importedTrips[0]?.id ?? null,
     });
+  },
+  clearAllData: async () => {
+    await Promise.all([
+      db.trips.clear(), db.packingItems.clear(), db.masterPackingItems.clear(), db.departureTasks.clear(),
+    ]);
+    set({ trips: [], packingItems: [], masterPackingItems: [], departureTasks: [], activeTripId: null });
   },
 }));

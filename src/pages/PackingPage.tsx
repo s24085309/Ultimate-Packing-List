@@ -2,12 +2,14 @@ import { useMemo, useState, type ReactNode } from 'react';
 import {
   Plus, Trash2, BatteryCharging, Battery, Star, Download, Library,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
-  Archive, Eye, EyeOff, RotateCcw,
+  Archive, Eye, EyeOff, RotateCcw, Settings,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
+import SettingsModal from '../components/SettingsModal';
 import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, conditionEmoji, sortGroupsCanonical, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
+import { APP_VERSION } from '../lib/versionHistory';
 import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity } from '../types';
 import s from '../widgets/shared.module.css';
 
@@ -643,6 +645,7 @@ export default function PackingPage() {
   const [filter, setFilter] = useState<ViewFilter>('all');
   const [exportOpen, setExportOpen] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [taskText, setTaskText] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const toggleGroupCollapsed = (g: string) => setCollapsedGroups(prev => {
@@ -664,10 +667,14 @@ export default function PackingPage() {
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 2vw, 32px)', margin: 0 }}>🧽 Ultimate Travel Packing List</h1>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 2vw, 32px)', margin: 0 }}>🧽 Ultimate Travel Packing List</h1>
+          <span title={`App version ${APP_VERSION}`} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)', opacity: 0.6, whiteSpace: 'nowrap' }}>v{APP_VERSION}</span>
+        </div>
         <div className={s.row}>
           <button className={s.btnGhost} onClick={() => setMasterOpen(true)}><Library size={18} /> Master Library</button>
           <button className={s.btnPrimary} onClick={() => setExportOpen(true)}><Download size={18} /> Export / Share</button>
+          <button className={s.btnGhost} onClick={() => setSettingsOpen(true)} aria-label="Settings" style={{ width: 48, padding: 0, flexShrink: 0 }}><Settings size={18} /></button>
         </div>
       </div>
 
@@ -860,6 +867,7 @@ export default function PackingPage() {
       )}
 
       {masterOpen && <MasterLibraryModal onClose={() => setMasterOpen(false)} />}
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }
