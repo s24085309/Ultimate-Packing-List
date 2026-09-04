@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.1';
+export const APP_VERSION = '6.9.2';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -72,6 +72,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-04',
     category: 'New Feature',
     description: 'Added a Settings screen: font family/size/colour, accent colour, dark/light mode, backup export & import, clear-all-data, an administrator password, and this Y.M.C version number with a neon-pink Version History panel.',
+  },
+  {
+    version: '6.9.2',
+    date: '2026-09-04',
+    category: 'New Feature',
+    description: 'Added a "Past Trips" view: trips whose return date has passed are moved out of the main trip row into a dedicated panel (with dates, packed count, and a way to open or delete each one) instead of cluttering the upcoming-trips list.',
   },
 ];
 

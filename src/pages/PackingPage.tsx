@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import {
   Plus, Trash2, BatteryCharging, Battery, Star, Download, Library,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
-  Archive, Eye, EyeOff, RotateCcw, Settings,
+  Archive, Eye, EyeOff, RotateCcw, Settings, History,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
@@ -77,6 +77,14 @@ function assignCitiesToDates(dates: string[], cities: TripCity[]): TripCity[] {
   if (cities.length === 0) return [];
   const perCity = Math.ceil(dates.length / cities.length);
   return dates.map((_, i) => cities[Math.min(cities.length - 1, Math.floor(i / perCity))]);
+}
+
+function isPastTrip(trip: Trip): boolean {
+  const ref = trip.returnDate || trip.departureDate;
+  if (!ref) return false;
+  const end = new Date(ref + 'T00:00:00');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return end < today;
 }
 
 function dayLabel(date: string): string {
@@ -626,6 +634,52 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function PastTripsModal({ trips, onOpenTrip, onClose }: { trips: Trip[]; onOpenTrip: (id: string) => void; onClose: () => void }) {
+  const removeTrip = useStore(st => st.removeTrip);
+  const items = useStore(st => st.packingItems);
+
+  const sorted = useMemo(() => [...trips].sort((a, b) => b.departureDate.localeCompare(a.departureDate)), [trips]);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(5,3,10,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div className="glass" style={{ width: 'min(520px,100%)', maxHeight: '85vh', overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 800, fontSize: 18 }}>🕓 Past Trips</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><X size={22} /></button>
+        </div>
+        <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-lo)' }}>
+          Trips whose return date has passed. Nothing here is ever deleted automatically — open one to view or export its list, or remove it for good.
+        </p>
+        {sorted.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>No past trips yet.</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {sorted.map(t => {
+            const tripItems = items.filter(i => i.tripId === t.id);
+            const packed = tripItems.filter(i => i.packed).length;
+            return (
+              <div key={t.id} className={s.touchRow} style={{ alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700 }}>{t.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-lo)', marginTop: 2 }}>
+                    {formatDateRange(t)} · {tripItems.length > 0 ? `${packed}/${tripItems.length} packed` : 'No items'}
+                  </div>
+                </div>
+                <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => onOpenTrip(t.id)}>View</button>
+                <button
+                  onClick={() => { if (confirm(`Delete "${t.name}" and its packing list? This can't be undone.`)) removeTrip(t.id); }}
+                  title="Delete this trip"
+                  style={{ background: 'none', border: 'none', color: '#fda4af' }}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PackingPage() {
   const trips = useStore(st => st.trips);
   const activeTripId = useStore(st => st.activeTripId);
@@ -646,6 +700,7 @@ export default function PackingPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pastTripsOpen, setPastTripsOpen] = useState(false);
   const [taskText, setTaskText] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const toggleGroupCollapsed = (g: string) => setCollapsedGroups(prev => {
@@ -663,6 +718,8 @@ export default function PackingPage() {
   const status = model ? statusLine(model) : null;
 
   const visibleGroups = model?.groups ?? [];
+  const upcomingTrips = useMemo(() => trips.filter(t => !isPastTrip(t)), [trips]);
+  const pastTrips = useMemo(() => trips.filter(isPastTrip), [trips]);
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: 4 }}>
@@ -672,6 +729,9 @@ export default function PackingPage() {
           <span title={`App version ${APP_VERSION}`} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)', opacity: 0.6, whiteSpace: 'nowrap' }}>v{APP_VERSION}</span>
         </div>
         <div className={s.row}>
+          {pastTrips.length > 0 && (
+            <button className={s.btnGhost} onClick={() => setPastTripsOpen(true)}><History size={18} /> Past Trips ({pastTrips.length})</button>
+          )}
           <button className={s.btnGhost} onClick={() => setMasterOpen(true)}><Library size={18} /> Master Library</button>
           <button className={s.btnPrimary} onClick={() => setExportOpen(true)}><Download size={18} /> Export / Share</button>
           <button className={s.btnGhost} onClick={() => setSettingsOpen(true)} aria-label="Settings" style={{ width: 48, padding: 0, flexShrink: 0 }}><Settings size={18} /></button>
@@ -680,7 +740,7 @@ export default function PackingPage() {
 
       {trips.length > 0 && (
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16 }}>
-          {trips.map(t => (
+          {upcomingTrips.map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTripId(t.id)}
@@ -868,6 +928,13 @@ export default function PackingPage() {
 
       {masterOpen && <MasterLibraryModal onClose={() => setMasterOpen(false)} />}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {pastTripsOpen && (
+        <PastTripsModal
+          trips={pastTrips}
+          onOpenTrip={id => { setActiveTripId(id); setPastTripsOpen(false); }}
+          onClose={() => setPastTripsOpen(false)}
+        />
+      )}
     </div>
   );
 }
