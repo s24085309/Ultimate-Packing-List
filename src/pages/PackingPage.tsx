@@ -602,6 +602,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const [isGift, setIsGift] = useState(false);
   const [giftFor, setGiftFor] = useState('');
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const activeItems = useMemo(() => masterItems.filter(m => !m.archived), [masterItems]);
   const archivedCount = masterItems.length - activeItems.length;
@@ -628,7 +629,10 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
       <div className="glass" style={{ width: 'min(560px,100%)', maxHeight: '85vh', overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 800, fontSize: 18 }}>🗃️ Master Packing Library</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <button className={s.btnPrimary} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5 }} onClick={() => setExportOpen(true)}>
+              <Download size={14} /> Export
+            </button>
             <button
               className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5 }}
               onClick={() => updateSettings({ masterListLocked: !locked })}
@@ -666,6 +670,12 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
         </div>
       </div>
       {archiveOpen && <MasterArchiveModal onClose={() => setArchiveOpen(false)} />}
+      {exportOpen && (
+        <PackingExportMenu
+          trip={null} items={[]} tasks={[]} masterItems={masterItems} viewFilter="all"
+          scope="master" onClose={() => setExportOpen(false)}
+        />
+      )}
     </div>
   );
 }

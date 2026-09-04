@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.4';
+export const APP_VERSION = '6.9.5';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -90,6 +90,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-04',
     category: 'Bug Fix',
     description: 'Each Master Library item now has a battery toggle to fix a wrongly-set "requires charging" flag directly (e.g. sunscreen incorrectly marked as needing charging), instead of only being fixable by delete-and-recreate.',
+  },
+  {
+    version: '6.9.5',
+    date: '2026-09-04',
+    category: 'New Feature',
+    description: 'Master Packing Library can now be exported directly (new "Export" button right in the Master Library panel) as CSV, plus Share and Email were enabled for it — alongside the existing PDF/Word/Excel/HTML export options.',
   },
 ];
 

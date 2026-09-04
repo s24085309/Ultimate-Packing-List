@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { X, FileText, FileSpreadsheet, FileCode, Printer, Share2, Loader2, CheckSquare, Square } from 'lucide-react';
+import { X, FileText, FileSpreadsheet, FileCode, Printer, Share2, Loader2, CheckSquare, Square, Table, Mail } from 'lucide-react';
 import Portal from './Portal';
 import type { Trip, PackingItem, DepartureTask, MasterPackingItem } from '../types';
 import {
   buildExportModel, buildMasterExportModel, DEFAULT_EXPORT_OPTIONS, filenameFor, masterFilenameFor,
-  downloadBlob, shareOrDownloadBlob, VIEW_FILTER_LABEL, type ExportOptions, type ViewFilter,
+  downloadBlob, shareOrDownloadBlob, VIEW_FILTER_LABEL, buildMasterCsv, buildTripCsv,
+  buildMasterPlainText, buildTripPlainText, mailtoHref, type ExportOptions, type ViewFilter,
 } from '../lib/packingExport';
 import s from '../widgets/shared.module.css';
 
@@ -27,7 +28,7 @@ const OPTION_LABELS: { key: keyof ExportOptions; label: string }[] = [
   { key: 'includeCharging', label: 'Include Charging List' },
 ];
 
-type Busy = 'pdf' | 'word' | 'excel' | 'html' | 'share' | 'print' | 'quickpdf' | 'currentview' | null;
+type Busy = 'pdf' | 'word' | 'excel' | 'csv' | 'html' | 'share' | 'print' | 'quickpdf' | 'currentview' | null;
 
 export default function PackingExportMenu({ trip, items, tasks, masterItems, viewFilter, onClose, scope = 'trip' }: Props) {
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_EXPORT_OPTIONS);
@@ -87,17 +88,37 @@ export default function PackingExportMenu({ trip, items, tasks, masterItems, vie
     downloadBlob(blob, filenameFor(trip, 'html'));
   });
 
+  const exportCsv = () => run('csv', async () => {
+    const csv = masterMode ? buildMasterCsv(masterItems) : (model ? buildTripCsv(model) : '');
+    if (!csv) return;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    downloadBlob(blob, masterMode ? masterFilenameFor('csv') : filenameFor(trip!, 'csv'));
+  });
+
   const doPrint = () => trip && model && run('print', async () => {
     const { openPrintWindow } = await import('../lib/packingPdf');
     openPrintWindow(model);
   });
 
-  const doShare = () => trip && model && run('share', async () => {
-    const { buildPdfBlob } = await import('../lib/packingPdf');
-    const blob = await buildPdfBlob(model);
-    const result = await shareOrDownloadBlob(blob, filenameFor(trip, 'pdf'), `${trip.name} — Packing List`);
-    setMessage(result === 'shared' ? 'Shared!' : result === 'downloaded' ? 'Your device doesn\'t support sharing files directly — downloaded instead.' : null);
+  const doShare = () => run('share', async () => {
+    if (masterMode) {
+      const { buildMasterXlsx } = await import('../lib/packingExcel');
+      const blob = await buildMasterXlsx(masterItems);
+      const result = await shareOrDownloadBlob(blob, masterFilenameFor('xlsx'), 'Master Packing Library');
+      setMessage(result === 'shared' ? 'Shared!' : result === 'downloaded' ? 'Your device doesn\'t support sharing files directly — downloaded instead.' : null);
+    } else if (trip && model) {
+      const { buildPdfBlob } = await import('../lib/packingPdf');
+      const blob = await buildPdfBlob(model);
+      const result = await shareOrDownloadBlob(blob, filenameFor(trip, 'pdf'), `${trip.name} — Packing List`);
+      setMessage(result === 'shared' ? 'Shared!' : result === 'downloaded' ? 'Your device doesn\'t support sharing files directly — downloaded instead.' : null);
+    }
   });
+
+  const doEmail = () => {
+    const subject = masterMode ? 'Master Packing Library' : `${trip?.name ?? 'Trip'} — Packing List`;
+    const body = masterMode ? buildMasterPlainText(masterItems) : (model ? buildTripPlainText(model) : '');
+    window.location.href = mailtoHref(subject, body);
+  };
 
   const quickPdf = () => trip && run('quickpdf', async () => {
     const quickModel = buildExportModel(trip, items, tasks, DEFAULT_EXPORT_OPTIONS, 'all');
@@ -192,6 +213,11 @@ export default function PackingExportMenu({ trip, items, tasks, masterItems, vie
                 <span style={{ fontSize: 13 }}>EXCEL</span>
                 <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 500 }}>Full packing data</span>
               </button>
+              <button className={s.btnPrimary} onClick={exportCsv} disabled={busy !== null || (!masterMode && !trip)} style={{ flexDirection: 'column', height: 74 }}>
+                {busy === 'csv' ? <Loader2 size={20} className="spin" /> : <Table size={20} />}
+                <span style={{ fontSize: 13 }}>CSV</span>
+                <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 500 }}>Plain spreadsheet data</span>
+              </button>
               <button className={s.btnPrimary} onClick={exportHtml} disabled={busy !== null || masterMode || !trip} style={{ flexDirection: 'column', height: 74, opacity: masterMode ? 0.4 : 1 }}>
                 {busy === 'html' ? <Loader2 size={20} className="spin" /> : <FileCode size={20} />}
                 <span style={{ fontSize: 13 }}>HTML</span>
@@ -202,10 +228,15 @@ export default function PackingExportMenu({ trip, items, tasks, masterItems, vie
                 <span style={{ fontSize: 13 }}>PRINT</span>
                 <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 500 }}>Print packing list</span>
               </button>
-              <button className={s.btnGhost} onClick={doShare} disabled={busy !== null || masterMode || !trip} style={{ flexDirection: 'column', height: 74, opacity: masterMode ? 0.4 : 1 }}>
+              <button className={s.btnGhost} onClick={doShare} disabled={busy !== null || (!masterMode && !trip)} style={{ flexDirection: 'column', height: 74 }}>
                 {busy === 'share' ? <Loader2 size={20} className="spin" /> : <Share2 size={20} />}
                 <span style={{ fontSize: 13 }}>SHARE</span>
                 <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 500 }}>{canShare ? 'AirDrop, Mail…' : 'Share file'}</span>
+              </button>
+              <button className={s.btnGhost} onClick={doEmail} disabled={!masterMode && !trip} style={{ flexDirection: 'column', height: 74 }}>
+                <Mail size={20} />
+                <span style={{ fontSize: 13 }}>EMAIL</span>
+                <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 500 }}>Opens your mail app</span>
               </button>
             </div>
           </div>

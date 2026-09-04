@@ -169,6 +169,69 @@ export function buildMasterExportModel(masterItems: MasterPackingItem[]): Master
   return { groups, generatedAt: new Date() };
 }
 
+// ---------- CSV ----------
+
+function csvCell(value: string | number | boolean | undefined | null): string {
+  const text = String(value ?? '');
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function csvRows(rows: (string | number | boolean | undefined | null)[][]): string {
+  return rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+}
+
+export function buildMasterCsv(masterItems: MasterPackingItem[]): string {
+  const { groups } = buildMasterExportModel(masterItems);
+  const rows: (string | number | boolean)[][] = [['Group', 'Item', 'Quantity', 'Notes', 'Requires Charging', 'Gift', 'Gift For']];
+  for (const g of groups) {
+    for (const i of g.items) {
+      rows.push([g.group, i.name, i.qty, i.notes ?? '', i.requiresCharging ? 'Yes' : 'No', i.isGift ? 'Yes' : 'No', i.giftFor ?? '']);
+    }
+  }
+  return csvRows(rows);
+}
+
+export function buildTripCsv(model: ExportModel): string {
+  const rows: (string | number | boolean)[][] = [['Group', 'Item', 'Quantity', 'Packed', 'Pack Later', 'Requires Charging', 'Notes', 'Gift', 'Gift For']];
+  for (const g of model.groups) {
+    for (const i of g.items) {
+      rows.push([g.group, i.name, i.qty, i.packed ? 'Yes' : 'No', i.packLater ? 'Yes' : 'No', i.requiresCharging ? 'Yes' : 'No', i.notes ?? '', i.isGift ? 'Yes' : 'No', i.giftFor ?? '']);
+    }
+  }
+  return csvRows(rows);
+}
+
+// ---------- Plain text / email ----------
+
+export function buildMasterPlainText(masterItems: MasterPackingItem[]): string {
+  const { groups } = buildMasterExportModel(masterItems);
+  const lines: string[] = ['🧽 Master Packing Library', ''];
+  for (const g of groups) {
+    lines.push(g.group);
+    for (const i of g.items) {
+      lines.push(`  - ${i.name}${i.qty > 1 ? ` x${i.qty}` : ''}${i.requiresCharging ? ' (needs charging)' : ''}${i.isGift ? ` (gift${i.giftFor ? ` for ${i.giftFor}` : ''})` : ''}`);
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+export function buildTripPlainText(model: ExportModel): string {
+  const lines: string[] = [`🧽 ${model.trip.name} — Packing List`, formatDateRange(model.trip), ''];
+  for (const g of model.groups) {
+    lines.push(g.group);
+    for (const i of g.items) {
+      lines.push(`  ${i.packed ? '[x]' : '[ ]'} ${i.name}${i.qty > 1 ? ` x${i.qty}` : ''}${i.requiresCharging ? ' (needs charging)' : ''}${i.isGift ? ` (gift${i.giftFor ? ` for ${i.giftFor}` : ''})` : ''}`);
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+export function mailtoHref(subject: string, body: string): string {
+  return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 // ---------- Filenames ----------
 
 function slug(text: string): string {
