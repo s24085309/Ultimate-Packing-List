@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.20';
+export const APP_VERSION = '6.9.21';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -186,6 +186,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'Shrunk the Library / Export / Settings header buttons on the Packing page so all three reliably fit on one row.',
+  },
+  {
+    version: '6.9.21',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: "Fixed the Daily Forecast list going stale after changing the Departure/Return dates — auto-fetched forecast rows for days outside the new date range are now dropped automatically, instead of silently showing days that no longer match the trip.",
   },
 ];
 

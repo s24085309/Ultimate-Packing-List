@@ -159,6 +159,19 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
   const addDay = () => set('weatherDaily', [...draft.weatherDaily, { ...EMPTY_WEATHER_DAY }]);
   const removeDay = (i: number) => set('weatherDaily', draft.weatherDaily.filter((_, idx) => idx !== i));
 
+  // Changing the trip dates can leave previously auto-fetched forecast rows
+  // pointing at days outside (or no longer aligned with) the new range —
+  // drop those so the list never silently shows stale, mismatched days.
+  // Manually-added rows (no `date`) aren't tied to a calendar day, so they stay.
+  const setDateField = (field: 'departureDate' | 'returnDate', value: string) => {
+    setDraft(d => {
+      const next = { ...d, [field]: value };
+      if (!next.departureDate || !next.returnDate) return next;
+      const validDates = new Set(dateRange(next.departureDate, next.returnDate));
+      return { ...next, weatherDaily: next.weatherDaily.filter(day => !day.date || validDates.has(day.date)) };
+    });
+  };
+
   const doSearchCities = async () => {
     if (!cityQuery.trim()) return;
     setCitySearching(true);
@@ -257,11 +270,11 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, minWidth: 0 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, color: 'var(--text-lo)', marginBottom: 4 }}>DEPARTURE</div>
-          <DatePicker value={draft.departureDate} onChange={v => set('departureDate', v)} />
+          <DatePicker value={draft.departureDate} onChange={v => setDateField('departureDate', v)} />
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, color: 'var(--text-lo)', marginBottom: 4 }}>RETURN</div>
-          <DatePicker value={draft.returnDate} onChange={v => set('returnDate', v)} />
+          <DatePicker value={draft.returnDate} onChange={v => setDateField('returnDate', v)} />
         </div>
       </div>
       <input className={s.input} placeholder="Accommodation" value={draft.accommodation} onChange={e => set('accommodation', e.target.value)} />
