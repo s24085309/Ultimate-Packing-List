@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
-import { X, Download, Upload, Sun, Moon, Lock, Unlock, Trash2, Cloud, CloudOff } from 'lucide-react';
+import { X, Download, Upload, Sun, Moon, Lock, Unlock, Trash2, Cloud, CloudOff, FolderCog, FolderX } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PinPrompt from './PinPrompt';
 import VersionHistoryModal from './VersionHistoryModal';
 import CloudSyncWizard from './CloudSyncWizard';
 import { APP_VERSION } from '../lib/versionHistory';
 import { FONT_STACKS, FONT_SIZE_LABEL, FONT_SIZE_ORDER, effectiveTextColor } from '../lib/appearance';
+import { useAutoBackup } from '../lib/autoBackup';
 import type { FontFamilyId, FontSizeId } from '../types';
 import s from '../widgets/shared.module.css';
 
@@ -27,6 +28,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const importBackup = useStore(st => st.importBackup);
   const importMasterLibrary = useStore(st => st.importMasterLibrary);
   const clearAllData = useStore(st => st.clearAllData);
+  const autoBackup = useAutoBackup();
 
   const [showVersionPin, setShowVersionPin] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
@@ -294,6 +296,46 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-lo)' }}>
             "Import Master Library Only" replaces just the Master Library — your trips, packing items, and departure tasks are never touched by it, unlike a full "Import Backup".
           </p>
+        </Section>
+
+        <Section title="📁 AUTO-BACKUP TO A FOLDER">
+          {!autoBackup.supported && (
+            <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-lo)' }}>
+              Your browser doesn't support picking a folder to auto-backup into (this needs Chrome/Edge on Android or desktop — not currently available in Safari). Use Export Backup above instead.
+            </p>
+          )}
+          {autoBackup.supported && !autoBackup.folderName && (
+            <>
+              <button className={s.btnGhost} style={{ alignSelf: 'flex-start' }} onClick={autoBackup.choose}>
+                <FolderCog size={16} /> Choose Backup Folder
+              </button>
+              <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-lo)' }}>
+                Automatically saves a backup into that folder every minute, keeping only the newest 5 and deleting older ones.
+              </p>
+            </>
+          )}
+          {autoBackup.supported && autoBackup.folderName && (
+            <>
+              <div className={s.row} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: 13.5, fontWeight: 600 }}>📁 {autoBackup.folderName}</span>
+                <span style={{ fontSize: 12, color: autoBackup.authorized ? '#4ade80' : '#fbbf24' }}>
+                  {autoBackup.authorized ? (autoBackup.running ? 'Backing up…' : 'Active') : 'Needs re-authorization'}
+                </span>
+              </div>
+              {autoBackup.lastBackupAt && (
+                <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-lo)' }}>
+                  Last backup: {new Date(autoBackup.lastBackupAt).toLocaleTimeString()} — keeping the newest 5 files, older ones are deleted automatically.
+                </p>
+              )}
+              {autoBackup.lastError && <p style={{ margin: 0, fontSize: 11.5, color: '#fda4af' }}>{autoBackup.lastError}</p>}
+              <div className={s.row} style={{ flexWrap: 'wrap' }}>
+                {!autoBackup.authorized && (
+                  <button className={s.btnGhost} onClick={autoBackup.reauthorize}><FolderCog size={16} /> Re-authorize</button>
+                )}
+                <button className={s.btnGhost} style={{ color: '#fda4af' }} onClick={autoBackup.stop}><FolderX size={16} /> Stop Auto-Backup</button>
+              </div>
+            </>
+          )}
         </Section>
 
         <Section title="🗑️ DANGER ZONE">

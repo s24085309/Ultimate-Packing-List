@@ -31,14 +31,13 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   includeCharging: true,
 };
 
-export type ViewFilter = 'all' | 'notPacked' | 'packLater' | 'charging' | 'gifts' | 'favourites';
+export type ViewFilter = 'all' | 'notPacked' | 'packLater' | 'charging' | 'favourites';
 
 export const VIEW_FILTER_LABEL: Record<ViewFilter, string> = {
   all: 'Everything',
   notPacked: 'Not Packed',
   packLater: 'Pack Later',
   charging: 'Charging',
-  gifts: 'Gifts',
   favourites: 'Favourites',
 };
 
@@ -134,7 +133,6 @@ export function buildExportModel(
   if (viewFilter === 'notPacked') items = items.filter(i => !i.packed);
   else if (viewFilter === 'packLater') items = items.filter(i => i.packLater);
   else if (viewFilter === 'charging') items = items.filter(i => i.requiresCharging);
-  else if (viewFilter === 'gifts') items = items.filter(i => i.isGift);
   else if (viewFilter === 'favourites') items = items.filter(i => i.favourite);
   else if (!options.includePacked) items = items.filter(i => !i.packed);
 

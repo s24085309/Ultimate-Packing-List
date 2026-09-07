@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.48';
+export const APP_VERSION = '6.9.49';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -354,6 +354,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'The Pack Later icon on each item is now a proper alarm-clock icon — outlined and grey when off, filled and purple (with a checkmark) when on — matching the same outline/filled style as the Charge and Cable icons, instead of a plain ⏰ emoji.',
+  },
+  {
+    version: '6.9.49',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Added Settings → 📁 Auto-Backup To A Folder — pick a folder on your device and the app automatically saves a backup into it every minute, keeping only the newest 5 backups and deleting older ones. (Needs a browser with folder-picker support, like Chrome/Edge — not currently available in Safari.) Also removed the "Gifts" filter chip.',
   },
 ];
 
