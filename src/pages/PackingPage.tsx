@@ -770,7 +770,7 @@ export default function PackingPage() {
   const pastTrips = useMemo(() => trips.filter(isPastTrip), [trips]);
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', padding: 4 }}>
+    <div style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden', padding: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0, flex: '1 1 auto' }}>
           <h1
@@ -781,7 +781,7 @@ export default function PackingPage() {
           >🧽 Spongie's Ultimate Travel Packing List</h1>
           <span title={`App version ${APP_VERSION}`} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)', opacity: 0.6, whiteSpace: 'nowrap', flexShrink: 0 }}>v{APP_VERSION}</span>
         </div>
-        <div className={s.row}>
+        <div className={s.row} style={{ flexWrap: 'wrap', rowGap: 8 }}>
           {pastTrips.length > 0 && (
             <button className={s.btnGhost} onClick={() => setPastTripsOpen(true)}><History size={18} /> Past Trips ({pastTrips.length})</button>
           )}
