@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Plus, Trash2, BatteryCharging, Battery, Star, Download, Library,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
@@ -300,6 +300,16 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
     }
   };
 
+  // Auto-fetch whenever the cities or dates change (e.g. right after adding a
+  // destination), as long as there's enough to fetch with. Skips the very
+  // first render so opening an existing trip doesn't immediately re-fetch.
+  const skipAutoFetch = useRef(true);
+  useEffect(() => {
+    if (skipAutoFetch.current) { skipAutoFetch.current = false; return; }
+    if (draft.cities.length > 0 && draft.departureDate && draft.returnDate) fetchLiveWeather();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.cities, draft.departureDate, draft.returnDate]);
+
   const refetchDay = async (i: number, cityName: string) => {
     const city = draft.cities.find(c => c.name === cityName);
     const day = draft.weatherDaily[i];
@@ -453,7 +463,8 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
   const toggleFav = useStore(st => st.togglePackingItemFavourite);
   const removeItem = useStore(st => st.removePackingItem);
   const updateItem = useStore(st => st.updatePackingItem);
-  const syncMasterItemGroup = useStore(st => st.syncMasterItemGroup);
+  const syncMasterItem = useStore(st => st.syncMasterItem);
+  const archiveMasterItemByName = useStore(st => st.archiveMasterItemByName);
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(item.name);
@@ -470,9 +481,20 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
   const saveEdit = () => {
     if (!name.trim()) return;
     const finalGroup = group.trim() || 'Other';
-    updateItem(item.id, { name: name.trim(), group: finalGroup, qty: Math.max(1, qty), notes: notes.trim() || undefined });
-    syncMasterItemGroup(item.name, finalGroup);
+    const finalName = name.trim();
+    const finalQty = Math.max(1, qty);
+    const finalNotes = notes.trim() || undefined;
+    updateItem(item.id, { name: finalName, group: finalGroup, qty: finalQty, notes: finalNotes });
+    // Keep the Master Library entry for this item in sync with the edit.
+    syncMasterItem(item.name, { name: finalName, group: finalGroup, qty: finalQty, notes: finalNotes });
     setEditing(false);
+  };
+
+  const deleteItem = () => {
+    removeItem(item.id);
+    // Archive (not delete) the matching Master Library entry, so it's
+    // recoverable from Archive rather than silently gone.
+    archiveMasterItemByName(item.name);
   };
 
   if (editing) {
@@ -531,7 +553,7 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
         </button>
         <button onClick={() => togglePackLater(item.id)} title="Pack later" style={{ background: 'none', border: 'none', color: item.packLater ? '#a855f7' : 'var(--text-lo)' }}>⏰</button>
         <button onClick={startEdit} title="Edit item" style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Pencil size={15} /></button>
-        <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
+        <button onClick={deleteItem} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
       </div>
     </div>
   );

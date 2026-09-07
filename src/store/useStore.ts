@@ -47,7 +47,8 @@ interface Store {
   deleteMasterItemPermanently: (id: string) => void;
   toggleMasterItemIgnored: (id: string) => void;
   ensureMasterItem: (item: Omit<MasterPackingItem, 'id'>) => void;
-  syncMasterItemGroup: (name: string, group: string) => void;
+  syncMasterItem: (name: string, patch: Partial<Omit<MasterPackingItem, 'id'>>) => void;
+  archiveMasterItemByName: (name: string) => void;
   moveMasterItem: (id: string, direction: 'up' | 'down') => void;
 
   addDepartureTask: (tripId: string, text: string) => void;
@@ -178,9 +179,15 @@ export const useStore = create<Store>((set, get) => ({
     if (exists) return;
     get().addMasterItem(item);
   },
-  syncMasterItemGroup: (name, group) => {
+  syncMasterItem: (name, patch) => {
     const match = get().masterPackingItems.find(m => m.name.trim().toLowerCase() === name.trim().toLowerCase());
-    if (match && match.group !== group) get().updateMasterItem(match.id, { group });
+    if (match) get().updateMasterItem(match.id, patch);
+  },
+  archiveMasterItemByName: (name) => {
+    const match = get().masterPackingItems.find(
+      m => m.name.trim().toLowerCase() === name.trim().toLowerCase() && !m.archived,
+    );
+    if (match) get().archiveMasterItem(match.id);
   },
   archiveMasterItem: (id) => get().updateMasterItem(id, { archived: true, ignored: false }),
   restoreMasterItem: (id) => get().updateMasterItem(id, { archived: false }),

@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.24';
+export const APP_VERSION = '6.9.26';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -210,6 +210,18 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'With 2+ destinations added, a new "Which destination each day?" list appears — defaults to an even split across your cities, but you can change any day before fetching, so the forecast (and each Daily Forecast row) reflects exactly which city you\'re in on which day, not a guess.',
+  },
+  {
+    version: '6.9.25',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: "The Master Library now tracks trip items more fully: editing an item's name, group, quantity, or notes updates its Master Library entry to match; deleting an item from a trip archives (not deletes) the matching Master Library entry, so it's recoverable from Archive instead of gone.",
+  },
+  {
+    version: '6.9.26',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Live weather now fetches automatically whenever you add a destination or set/change the trip dates (as long as at least one is already set), instead of requiring a tap on "Fetch Live Weather" every time.',
   },
 ];
 
