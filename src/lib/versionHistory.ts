@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.29';
+export const APP_VERSION = '6.9.30';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -240,6 +240,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'Bug Fix',
     description: 'Tapping a destination chip now searches for it in "Cities for live weather" above and fills in the search box, so you can pick the right match — useful when auto-add didn\'t find (or picked the wrong) city. Also fixed "+ New…" when moving a Master Library item to a new group: it now uses the app\'s own text field (which supports emoji) instead of the phone\'s native prompt dialog, which could refuse emoji the second time you tried it.',
+  },
+  {
+    version: '6.9.30',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Master Library groups can now be reordered with ↑/↓ arrows next to each group name (hidden once you "Lock Order"), and a new "🔋 Charging" button shows every item across the whole library that needs charging — a quick "charge these before you leave" checklist independent of any one trip.',
   },
 ];
 

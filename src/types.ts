@@ -88,6 +88,7 @@ export interface AppSettings {
   accentColor: string; // hex — overrides the gradient/accent colour
   adminPassword?: string; // gates the Version History panel
   masterListLocked?: boolean; // when true, hides the Master Library's reorder controls
+  masterGroupOrder?: string[]; // explicit group display order in the Master Library — unlisted groups fall back to canonical order
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {

@@ -16,6 +16,7 @@ import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity
 import s from '../widgets/shared.module.css';
 
 const GIFTS_GROUP = '🎁 Gifts';
+const EMPTY_GROUP_ORDER: string[] = [];
 
 const GROUP_COLORS = ['#f87171', '#fb923c', '#fbbf24', '#4ade80', '#22d3ee', '#60a5fa', '#a78bfa', '#f472b6', '#2dd4bf', '#facc15'];
 function groupColor(name: string): string {
@@ -705,8 +706,9 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
   );
 }
 
-function MasterGroupSection({ group, items, locked, allGroups }: {
+function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveDown }: {
   group: string; items: ReturnType<typeof useStore.getState>['masterPackingItems']; locked: boolean; allGroups: string[];
+  onMoveUp?: () => void; onMoveDown?: () => void;
 }) {
   const addMasterItem = useStore(st => st.addMasterItem);
   const archiveMasterItem = useStore(st => st.archiveMasterItem);
@@ -732,6 +734,19 @@ function MasterGroupSection({ group, items, locked, allGroups }: {
       <GroupHeader
         group={group} count={items.length} collapsed={collapsed} onToggle={() => setCollapsed(c => !c)}
         extra={
+          <>
+          {!locked && (onMoveUp || onMoveDown) && (
+            <div style={{ display: 'flex', gap: 2, marginRight: 4 }}>
+              <button
+                onClick={onMoveUp} disabled={!onMoveUp} title="Move group up"
+                style={{ background: 'none', border: 'none', color: onMoveUp ? 'var(--text-lo)' : 'rgba(184,174,216,0.25)', padding: 2 }}
+              ><ArrowUp size={14} /></button>
+              <button
+                onClick={onMoveDown} disabled={!onMoveDown} title="Move group down"
+                style={{ background: 'none', border: 'none', color: onMoveDown ? 'var(--text-lo)' : 'rgba(184,174,216,0.25)', padding: 2 }}
+              ><ArrowDown size={14} /></button>
+            </div>
+          )}
           <button
             onClick={() => { if (confirm(`Archive the whole "${group}" group (${items.length} item${items.length === 1 ? '' : 's'})? You can restore it from the Archive any time.`)) archiveMasterGroup(group); }}
             title="Archive this whole group"
@@ -739,6 +754,7 @@ function MasterGroupSection({ group, items, locked, allGroups }: {
           >
             <Archive size={14} /> Archive group
           </button>
+          </>
         }
       />
       {!collapsed && (
@@ -895,6 +911,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const masterItems = useStore(st => st.masterPackingItems);
   const addMasterItem = useStore(st => st.addMasterItem);
   const locked = useStore(st => st.settings.masterListLocked ?? false);
+  const groupOrder = useStore(st => st.settings.masterGroupOrder ?? EMPTY_GROUP_ORDER);
   const updateSettings = useStore(st => st.updateSettings);
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
@@ -903,9 +920,11 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const [giftFor, setGiftFor] = useState('');
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [chargingOpen, setChargingOpen] = useState(false);
 
   const activeItems = useMemo(() => masterItems.filter(m => !m.archived), [masterItems]);
   const archivedCount = masterItems.length - activeItems.length;
+  const chargingItems = useMemo(() => activeItems.filter(m => m.requiresCharging), [activeItems]);
 
   const groups = useMemo(() => {
     const map = new Map<string, typeof activeItems>();
@@ -914,9 +933,24 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
-    return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items: sortMasterItems(items) })))
-      .map(({ group, items }) => [group, items] as const);
-  }, [activeItems]);
+    const canonical = sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items: sortMasterItems(items) })));
+    // Groups the user has manually reordered come first, in that order;
+    // any group not yet in that list falls back to canonical order after them.
+    const known = canonical.filter(({ group }) => groupOrder.includes(group))
+      .sort((a, b) => groupOrder.indexOf(a.group) - groupOrder.indexOf(b.group));
+    const rest = canonical.filter(({ group }) => !groupOrder.includes(group));
+    return [...known, ...rest].map(({ group, items }) => [group, items] as const);
+  }, [activeItems, groupOrder]);
+
+  const moveGroup = (name: string, direction: 'up' | 'down') => {
+    const names = groups.map(([g]) => g);
+    const idx = names.indexOf(name);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (idx === -1 || swapIdx < 0 || swapIdx >= names.length) return;
+    const reordered = [...names];
+    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+    updateSettings({ masterGroupOrder: reordered });
+  };
 
   const submit = () => {
     if (!name.trim()) return;
@@ -943,6 +977,14 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
             <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5 }} onClick={() => setArchiveOpen(true)}>
               <Archive size={14} /> Archive{archivedCount > 0 ? ` (${archivedCount})` : ''}
             </button>
+            {chargingItems.length > 0 && (
+              <button
+                className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5, color: chargingOpen ? '#22d3ee' : undefined }}
+                onClick={() => setChargingOpen(o => !o)}
+              >
+                <BatteryCharging size={14} /> Charging ({chargingItems.length})
+              </button>
+            )}
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><X size={22} /></button>
           </div>
         </div>
@@ -951,6 +993,17 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
           Use ↑/↓ to reorder items within a group, then "Lock Order" to hide those controls and keep it from shifting by accident.
           Use 👁️ to ignore an item (it stays here but skips new trips) or 🗄️ to archive it — archived items move to the Archive, where you can restore them or delete them for good.
         </p>
+        {chargingOpen && chargingItems.length > 0 && (
+          <div className="glass" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#22d3ee' }}>🔋 CHARGE THESE BEFORE YOU LEAVE</div>
+            {chargingItems.map(i => (
+              <div key={i.id} className={s.touchRow}>
+                <BatteryCharging size={16} color="#22d3ee" style={{ flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>{i.name} <span style={{ fontSize: 11, color: 'var(--text-lo)' }}>({i.group})</span></div>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 8 }}>
           <input className={s.input} placeholder="Item name" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
           {customGroup ? (
@@ -981,8 +1034,12 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {groups.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>Your master library is empty — add items above.</div>}
-          {groups.map(([g, items]) => (
-            <MasterGroupSection key={g} group={g} items={items} locked={locked} allGroups={groups.map(([gg]) => gg)} />
+          {groups.map(([g, items], idx) => (
+            <MasterGroupSection
+              key={g} group={g} items={items} locked={locked} allGroups={groups.map(([gg]) => gg)}
+              onMoveUp={idx > 0 ? () => moveGroup(g, 'up') : undefined}
+              onMoveDown={idx < groups.length - 1 ? () => moveGroup(g, 'down') : undefined}
+            />
           ))}
         </div>
       </div>
