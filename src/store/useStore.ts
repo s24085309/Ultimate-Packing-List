@@ -20,6 +20,7 @@ interface Store {
   setActiveTripId: (id: string | null) => void;
   cloudStatus: CloudSyncStatus;
   cloudEmail: string | null;
+  cloudLastSyncedAt: number | null;
   setCloudStatus: (status: CloudSyncStatus, email?: string | null) => void;
 
   init: () => Promise<void>;
@@ -71,7 +72,18 @@ export const useStore = create<Store>((set, get) => ({
   setActiveTripId: (id) => set({ activeTripId: id }),
   cloudStatus: 'disabled',
   cloudEmail: null,
-  setCloudStatus: (status, email) => set({ cloudStatus: status, cloudEmail: email !== undefined ? email : get().cloudEmail }),
+  cloudLastSyncedAt: (() => {
+    try { const raw = localStorage.getItem('packing-cloud-last-synced'); return raw ? Number(raw) : null; } catch { return null; }
+  })(),
+  setCloudStatus: (status, email) => {
+    const patch: Partial<Store> = { cloudStatus: status, cloudEmail: email !== undefined ? email : get().cloudEmail };
+    if (status === 'synced') {
+      const now = Date.now();
+      patch.cloudLastSyncedAt = now;
+      try { localStorage.setItem('packing-cloud-last-synced', String(now)); } catch { /* ignore */ }
+    }
+    set(patch);
+  },
 
   init: async () => {
     await seedDemoData();

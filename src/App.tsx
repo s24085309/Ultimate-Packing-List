@@ -1,12 +1,12 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Cloud, X } from 'lucide-react';
+import { Cloud, CloudOff, X, RefreshCw } from 'lucide-react';
 import { useStore } from './store/useStore';
 import PackingPage from './pages/PackingPage';
 import PullToRefresh from './components/PullToRefresh';
 import Portal from './components/Portal';
 import CloudSyncWizard from './components/CloudSyncWizard';
 import { applyAppearance, FONT_SIZE_SCALE } from './lib/appearance';
-import { startCloudSync } from './lib/useCloudSync';
+import { startCloudSync, restartCloudSync } from './lib/useCloudSync';
 
 const CLOUD_PROMPT_SEEN_KEY = 'spongie-cloud-prompt-seen';
 
@@ -15,8 +15,12 @@ export default function App() {
   const init = useStore(s => s.init);
   const settings = useStore(s => s.settings);
   const cloudStatus = useStore(s => s.cloudStatus);
+  const cloudEmail = useStore(s => s.cloudEmail);
+  const cloudLastSyncedAt = useStore(s => s.cloudLastSyncedAt);
   const [showCloudPrompt, setShowCloudPrompt] = useState(false);
   const [showCloudWizard, setShowCloudWizard] = useState(false);
+  const [showDisconnected, setShowDisconnected] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => { init(); }, [init]);
   useEffect(() => { startCloudSync(); }, []);
@@ -36,6 +40,20 @@ export default function App() {
   const dismissCloudPrompt = () => {
     setShowCloudPrompt(false);
     try { localStorage.setItem(CLOUD_PROMPT_SEEN_KEY, '1'); } catch { /* ignore */ }
+  };
+
+  // For anyone already signed in: whenever cloud sync can't reach the
+  // server — whether that's discovered right when the app opens, or the
+  // connection drops while it's already running — surface it every time,
+  // not just once. Clears itself as soon as a sync succeeds.
+  useEffect(() => {
+    if (cloudStatus === 'error' && cloudEmail) { setShowDisconnected(true); setRetrying(false); }
+    else if (cloudStatus === 'synced') setShowDisconnected(false);
+  }, [cloudStatus, cloudEmail]);
+
+  const retryCloudConnection = () => {
+    setRetrying(true);
+    restartCloudSync();
   };
 
   if (!ready) {
@@ -108,6 +126,48 @@ export default function App() {
         </Portal>
       )}
       {showCloudWizard && <CloudSyncWizard onClose={() => setShowCloudWizard(false)} />}
+      {showDisconnected && (
+        <Portal>
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(0,0,0,0.55)', padding: 20,
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--bg-1, #1c1c1e)', borderRadius: 16, padding: 24, maxWidth: 340,
+                display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', textAlign: 'center',
+                boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+              }}
+            >
+              <button
+                onClick={() => setShowDisconnected(false)}
+                aria-label="Dismiss"
+                style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: 'var(--text-lo)', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+              <CloudOff size={40} color="#fda4af" style={{ marginTop: -12 }} />
+              <div style={{ fontWeight: 800, fontSize: 18 }}>Not Connected to Cloud Sync</div>
+              <div style={{ fontSize: 14, color: 'var(--text-lo)' }}>
+                Last connection: {cloudLastSyncedAt ? new Date(cloudLastSyncedAt).toLocaleString() : 'never'}. Please check your Internet.
+              </div>
+              <button
+                onClick={retryCloudConnection}
+                disabled={retrying}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, padding: '10px 20px',
+                  borderRadius: 10, border: 'none', background: 'var(--accent, #4da3ff)', color: '#fff',
+                  fontWeight: 700, fontSize: 14, cursor: retrying ? 'default' : 'pointer', opacity: retrying ? 0.7 : 1,
+                }}
+              >
+                <RefreshCw size={16} className={retrying ? 'spin' : ''} /> Try Again
+              </button>
+            </div>
+          </div>
+        </Portal>
+      )}
     </>
   );
 }
