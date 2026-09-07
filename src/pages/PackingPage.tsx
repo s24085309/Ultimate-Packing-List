@@ -3,6 +3,7 @@ import {
   Plus, Trash2, BatteryCharging, Battery, Star, Download, Library, Cable,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
   Archive, Eye, EyeOff, RotateCcw, Settings, History, Lock, Unlock, ArrowUp, ArrowDown,
+  AlarmClock, AlarmClockCheck,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
@@ -761,7 +762,9 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
         <button onClick={() => toggleFav(item.id)} style={{ background: 'none', border: 'none', color: item.favourite ? '#fbbf24' : 'var(--text-lo)' }}>
           <Star size={18} fill={item.favourite ? '#fbbf24' : 'none'} />
         </button>
-        <button onClick={() => togglePackLater(item.id)} title="Pack later" style={{ background: 'none', border: 'none', color: item.packLater ? '#a855f7' : 'var(--text-lo)' }}>⏰</button>
+        <button onClick={() => togglePackLater(item.id)} title="Pack later" style={{ background: 'none', border: 'none', color: item.packLater ? '#a855f7' : 'var(--text-lo)' }}>
+          {item.packLater ? <AlarmClockCheck size={18} /> : <AlarmClock size={18} />}
+        </button>
         <button onClick={startEdit} title="Edit item" style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Pencil size={15} /></button>
         <button onClick={deleteItem} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
       </div>

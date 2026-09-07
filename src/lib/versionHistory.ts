@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.47';
+export const APP_VERSION = '6.9.48';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -348,6 +348,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Added a "⭐ Favourites" filter next to Not Packed / Pack Later / Charging / Gifts — tap the star on any item to flag it as a must-pack, then use this filter to see only your starred items and make sure every one of them is packed.',
+  },
+  {
+    version: '6.9.48',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'The Pack Later icon on each item is now a proper alarm-clock icon — outlined and grey when off, filled and purple (with a checkmark) when on — matching the same outline/filled style as the Charge and Cable icons, instead of a plain ⏰ emoji.',
   },
 ];
 
