@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.15';
+export const APP_VERSION = '6.9.20';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -156,6 +156,36 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'Bug Fix',
     description: 'Fixed the header button row (Master Library / Export / Settings) overflowing off the right edge of the screen on iPhone instead of wrapping to a second row.',
+  },
+  {
+    version: '6.9.16',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: 'Fixed Cloud Sync forcing a fresh sign-in on every app launch — a bug in how the Firebase connection was named meant it could never find a previously saved session. Signing in now stays signed in.',
+  },
+  {
+    version: '6.9.17',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: 'The Departure/Return calendar popup now always opens centred on screen instead of anchored below the date field, so it can never get pushed off the bottom or side of the screen.',
+  },
+  {
+    version: '6.9.18',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: '"Fetch Live Weather for Trip Dates" now explains what\'s missing (add a city, or set both dates) instead of silently doing nothing.',
+  },
+  {
+    version: '6.9.19',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Adding an item (in a trip or the Master Library) now lets you pick its group from a dropdown of existing groups, or create a new one — instead of typing it freehand. Trip items can now be edited (name, group, quantity, notes) via a new pencil icon, and changing an item\'s group here now updates the matching Master Library entry too. In the Master Library, each item has a "move to group" dropdown to move it to a different or brand-new group.',
+  },
+  {
+    version: '6.9.20',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'Shrunk the Library / Export / Settings header buttons on the Packing page so all three reliably fit on one row.',
   },
 ];
 

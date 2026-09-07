@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import Portal from './Portal';
 import s from '../widgets/shared.module.css';
@@ -24,24 +24,18 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
   value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const anchorRef = useRef<HTMLButtonElement>(null);
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 260 });
 
   const parsed = parseIso(value);
   const today = new Date();
   const [viewYear, setViewYear] = useState(parsed?.y ?? today.getFullYear());
   const [viewMonth, setViewMonth] = useState(parsed?.m ?? today.getMonth());
 
-  useEffect(() => {
-    if (open) {
-      const p = parseIso(value);
-      setViewYear(p?.y ?? today.getFullYear());
-      setViewMonth(p?.m ?? today.getMonth());
-      const rect = anchorRef.current?.getBoundingClientRect();
-      if (rect) setCoords({ top: rect.bottom + window.scrollY + 6, left: rect.left + window.scrollX, width: Math.max(260, rect.width) });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  const openPicker = () => {
+    const p = parseIso(value);
+    setViewYear(p?.y ?? today.getFullYear());
+    setViewMonth(p?.m ?? today.getMonth());
+    setOpen(true);
+  };
 
   const firstOfMonth = new Date(viewYear, viewMonth, 1);
   const startWeekday = firstOfMonth.getDay();
@@ -57,9 +51,8 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
   return (
     <>
       <button
-        ref={anchorRef}
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={openPicker}
         className={s.input}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left', color: parsed ? 'var(--text-hi)' : 'var(--text-lo)', cursor: 'pointer' }}
       >
@@ -69,13 +62,19 @@ export default function DatePicker({ value, onChange, placeholder = 'Select date
 
       {open && (
         <Portal>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 800 }} onClick={() => setOpen(false)}>
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 800, display: 'flex',
+              alignItems: 'center', justifyContent: 'center', padding: 16,
+            }}
+            onClick={() => setOpen(false)}
+          >
             <div
               className="glass"
               onClick={e => e.stopPropagation()}
               style={{
-                position: 'absolute', top: coords.top, left: coords.left, width: coords.width, maxWidth: 'calc(100vw - 24px)',
-                padding: 14, display: 'flex', flexDirection: 'column', gap: 10, zIndex: 801,
+                width: 300, maxWidth: '100%',
+                padding: 14, display: 'flex', flexDirection: 'column', gap: 10,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

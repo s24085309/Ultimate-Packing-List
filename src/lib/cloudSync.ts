@@ -70,7 +70,11 @@ export function getCloudApp(config: FirebaseConfig): { auth: Auth; db: Firestore
   const key = JSON.stringify(config);
   if (app && currentConfigKey === key && auth && db) return { auth, db };
   if (app) { deleteApp(app).catch(() => {}); app = null; }
-  app = initializeApp(config, `packing-sync-${Date.now()}`);
+  // A stable app name is required — Firebase Auth's persisted-session storage
+  // key includes the app name, so a name that changes on every load (e.g. one
+  // built from Date.now()) can never find yesterday's saved session, forcing
+  // a fresh sign-in on every launch.
+  app = initializeApp(config, 'packing-sync');
   auth = getAuth(app);
   db = getFirestore(app);
   currentConfigKey = key;

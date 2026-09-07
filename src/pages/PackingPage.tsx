@@ -194,7 +194,14 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
   };
 
   const fetchLiveWeather = async () => {
-    if (draft.cities.length === 0 || !draft.departureDate || !draft.returnDate) return;
+    if (draft.cities.length === 0) {
+      setWeatherError('Add at least one city above (search and tap it to add) before fetching live weather.');
+      return;
+    }
+    if (!draft.departureDate || !draft.returnDate) {
+      setWeatherError('Set both the departure and return dates above before fetching live weather.');
+      return;
+    }
     setWeatherLoading(true);
     setWeatherError(null);
     try {
@@ -339,12 +346,66 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
   );
 }
 
-function ItemRow({ item }: { item: PackingItem }) {
+function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
   const togglePacked = useStore(st => st.togglePackingItemPacked);
   const togglePackLater = useStore(st => st.togglePackingItemPackLater);
   const toggleCharged = useStore(st => st.togglePackingItemCharged);
   const toggleFav = useStore(st => st.togglePackingItemFavourite);
   const removeItem = useStore(st => st.removePackingItem);
+  const updateItem = useStore(st => st.updatePackingItem);
+  const syncMasterItemGroup = useStore(st => st.syncMasterItemGroup);
+
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(item.name);
+  const [group, setGroup] = useState(item.group);
+  const [customGroup, setCustomGroup] = useState(false);
+  const [qty, setQty] = useState(item.qty);
+  const [notes, setNotes] = useState(item.notes ?? '');
+
+  const startEdit = () => {
+    setName(item.name); setGroup(item.group); setQty(item.qty); setNotes(item.notes ?? ''); setCustomGroup(false);
+    setEditing(true);
+  };
+
+  const saveEdit = () => {
+    if (!name.trim()) return;
+    const finalGroup = group.trim() || 'Other';
+    updateItem(item.id, { name: name.trim(), group: finalGroup, qty: Math.max(1, qty), notes: notes.trim() || undefined });
+    syncMasterItemGroup(item.name, finalGroup);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className={s.touchRow} style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 8 }}>
+        <input className={s.input} style={{ width: '100%' }} value={name} onChange={e => setName(e.target.value)} autoFocus />
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, width: '100%' }}>
+          {customGroup ? (
+            <input
+              className={s.input} placeholder="New group name" autoFocus
+              value={group} onChange={e => setGroup(e.target.value)}
+              onBlur={() => { if (!group.trim()) setCustomGroup(false); }}
+            />
+          ) : (
+            <select
+              className={s.input} value={group}
+              onChange={e => { if (e.target.value === '__new__') { setCustomGroup(true); setGroup(''); } else setGroup(e.target.value); }}
+            >
+              {groups.map(g => <option key={g} value={g}>{g}</option>)}
+              {!groups.includes(group) && <option value={group}>{group}</option>}
+              <option value="__new__">+ New group…</option>
+            </select>
+          )}
+          <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} />
+        </div>
+        <input className={s.input} style={{ width: '100%' }} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
+        <div className={s.row}>
+          <button className={s.btnPrimary} onClick={saveEdit}>Save</button>
+          <button className={s.btnGhost} onClick={() => setEditing(false)}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={s.touchRow} style={{ alignItems: 'flex-start' }}>
@@ -369,6 +430,7 @@ function ItemRow({ item }: { item: PackingItem }) {
           <Star size={18} fill={item.favourite ? '#fbbf24' : 'none'} />
         </button>
         <button onClick={() => togglePackLater(item.id)} title="Pack later" style={{ background: 'none', border: 'none', color: item.packLater ? '#a855f7' : 'var(--text-lo)' }}>⏰</button>
+        <button onClick={startEdit} title="Edit item" style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Pencil size={15} /></button>
         <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
       </div>
     </div>
@@ -380,6 +442,7 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
   const ensureMasterItem = useStore(st => st.ensureMasterItem);
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
+  const [customGroup, setCustomGroup] = useState(false);
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState('');
   const [charging, setCharging] = useState(false);
@@ -403,7 +466,7 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
       name: trimmedName, group: finalGroup, qty: Math.max(1, qty), notes: finalNotes,
       requiresCharging: charging, isGift, giftFor: finalGiftFor,
     });
-    setName(''); setNotes(''); setQty(1); setCharging(false); setIsGift(false); setGiftFor('');
+    setName(''); setNotes(''); setQty(1); setCharging(false); setIsGift(false); setGiftFor(''); setCustomGroup(false);
   };
 
   return (
@@ -419,10 +482,24 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
       {open && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
-            <input className={s.input} placeholder="Group (e.g. 🧼 Hygiene)" list="packing-groups" value={group} onChange={e => setGroup(e.target.value)} />
+            {customGroup ? (
+              <input
+                className={s.input} placeholder="New group name (e.g. 🧼 Hygiene)" autoFocus
+                value={group} onChange={e => setGroup(e.target.value)}
+                onBlur={() => { if (!group.trim()) setCustomGroup(false); }}
+              />
+            ) : (
+              <select
+                className={s.input} value={group}
+                onChange={e => { if (e.target.value === '__new__') { setCustomGroup(true); setGroup(''); } else setGroup(e.target.value); }}
+              >
+                <option value="">Other (default)</option>
+                {groups.map(g => <option key={g} value={g}>{g}</option>)}
+                <option value="__new__">+ New group…</option>
+              </select>
+            )}
             <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} />
           </div>
-          <datalist id="packing-groups">{groups.map(g => <option key={g} value={g} />)}</datalist>
           <input className={s.input} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
           <div className={s.row} style={{ flexWrap: 'wrap', gap: 10 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
@@ -444,7 +521,9 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
   );
 }
 
-function MasterGroupSection({ group, items, locked }: { group: string; items: ReturnType<typeof useStore.getState>['masterPackingItems']; locked: boolean }) {
+function MasterGroupSection({ group, items, locked, allGroups }: {
+  group: string; items: ReturnType<typeof useStore.getState>['masterPackingItems']; locked: boolean; allGroups: string[];
+}) {
   const addMasterItem = useStore(st => st.addMasterItem);
   const archiveMasterItem = useStore(st => st.archiveMasterItem);
   const archiveMasterGroup = useStore(st => st.archiveMasterGroup);
@@ -508,6 +587,23 @@ function MasterGroupSection({ group, items, locked }: { group: string; items: Re
               >
                 {i.requiresCharging ? <BatteryCharging size={16} /> : <Battery size={16} />}
               </button>
+              <select
+                value={group}
+                onChange={e => {
+                  if (e.target.value === '__new__') {
+                    const next = window.prompt('New group name:', '');
+                    if (next && next.trim()) updateMasterItem(i.id, { group: next.trim() });
+                    return;
+                  }
+                  updateMasterItem(i.id, { group: e.target.value });
+                }}
+                title="Move to a different group"
+                style={{ background: 'none', border: '1px solid var(--card-border)', borderRadius: 6, color: 'var(--text-lo)', fontSize: 11.5, maxWidth: 84, padding: '4px 2px' }}
+              >
+                {allGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                {!allGroups.includes(group) && <option value={group}>{group}</option>}
+                <option value="__new__">+ New…</option>
+              </select>
               {activeTripId && (
                 <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => addMasterItemToTrip(i.id, activeTripId)}>
                   Add to trip
@@ -601,6 +697,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const updateSettings = useStore(st => st.updateSettings);
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
+  const [customGroup, setCustomGroup] = useState(false);
   const [isGift, setIsGift] = useState(false);
   const [giftFor, setGiftFor] = useState('');
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -623,7 +720,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const submit = () => {
     if (!name.trim()) return;
     addMasterItem({ name: name.trim(), group: group.trim() || 'Other', qty: 1, requiresCharging: false, isGift, giftFor: isGift ? giftFor.trim() || undefined : undefined });
-    setName(''); setIsGift(false); setGiftFor('');
+    setName(''); setIsGift(false); setGiftFor(''); setCustomGroup(false);
   };
 
   return (
@@ -655,7 +752,22 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <input className={s.input} placeholder="Item name" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
-          <input className={s.input} style={{ width: 140 }} placeholder="Group (new or existing)" list="packing-groups" value={group} onChange={e => setGroup(e.target.value)} />
+          {customGroup ? (
+            <input
+              className={s.input} style={{ width: 140 }} placeholder="New group name" autoFocus
+              value={group} onChange={e => setGroup(e.target.value)}
+              onBlur={() => { if (!group.trim()) setCustomGroup(false); }}
+            />
+          ) : (
+            <select
+              className={s.input} style={{ width: 140 }} value={group}
+              onChange={e => { if (e.target.value === '__new__') { setCustomGroup(true); setGroup(''); } else setGroup(e.target.value); }}
+            >
+              <option value="">Other (default)</option>
+              {groups.map(([g]) => <option key={g} value={g}>{g}</option>)}
+              <option value="__new__">+ New group…</option>
+            </select>
+          )}
           <button className={s.btnPrimary} onClick={submit} style={{ width: 48, padding: 0, flexShrink: 0 }}><Plus size={18} /></button>
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
@@ -668,7 +780,9 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {groups.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>Your master library is empty — add items above.</div>}
-          {groups.map(([g, items]) => <MasterGroupSection key={g} group={g} items={items} locked={locked} />)}
+          {groups.map(([g, items]) => (
+            <MasterGroupSection key={g} group={g} items={items} locked={locked} allGroups={groups.map(([gg]) => gg)} />
+          ))}
         </div>
       </div>
       {archiveOpen && <MasterArchiveModal onClose={() => setArchiveOpen(false)} />}
@@ -781,13 +895,21 @@ export default function PackingPage() {
           >🧽 Spongie's Ultimate Travel Packing List</h1>
           <span title={`App version ${APP_VERSION}`} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)', opacity: 0.6, whiteSpace: 'nowrap', flexShrink: 0 }}>v{APP_VERSION}</span>
         </div>
-        <div className={s.row} style={{ flexWrap: 'wrap', rowGap: 8 }}>
+        <div className={s.row} style={{ flexWrap: 'wrap', rowGap: 8, gap: 8 }}>
           {pastTrips.length > 0 && (
-            <button className={s.btnGhost} onClick={() => setPastTripsOpen(true)}><History size={18} /> Past Trips ({pastTrips.length})</button>
+            <button className={s.btnGhost} onClick={() => setPastTripsOpen(true)} style={{ minHeight: 40, padding: '0 12px', fontSize: 13 }}>
+              <History size={16} /> Past Trips ({pastTrips.length})
+            </button>
           )}
-          <button className={s.btnGhost} onClick={() => setMasterOpen(true)}><Library size={18} /> Master Library</button>
-          <button className={s.btnPrimary} onClick={() => setExportOpen(true)}><Download size={18} /> Export / Share</button>
-          <button className={s.btnGhost} onClick={() => setSettingsOpen(true)} aria-label="Settings" style={{ width: 48, padding: 0, flexShrink: 0 }}><Settings size={18} /></button>
+          <button className={s.btnGhost} onClick={() => setMasterOpen(true)} style={{ minHeight: 40, padding: '0 12px', fontSize: 13 }}>
+            <Library size={16} /> Library
+          </button>
+          <button className={s.btnPrimary} onClick={() => setExportOpen(true)} style={{ minHeight: 40, padding: '0 12px', fontSize: 13 }}>
+            <Download size={16} /> Export
+          </button>
+          <button className={s.btnGhost} onClick={() => setSettingsOpen(true)} aria-label="Settings" style={{ width: 40, minHeight: 40, padding: 0, flexShrink: 0 }}>
+            <Settings size={16} />
+          </button>
         </div>
       </div>
 
@@ -934,7 +1056,7 @@ export default function PackingPage() {
                 />
                 {!collapsedGroups.has(g.group) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                    {g.items.map(item => <ItemRow key={item.id} item={item} />)}
+                    {g.items.map(item => <ItemRow key={item.id} item={item} groups={groups} />)}
                   </div>
                 )}
               </div>
