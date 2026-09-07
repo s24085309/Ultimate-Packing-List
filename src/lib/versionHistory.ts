@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.12';
+export const APP_VERSION = '6.9.13';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -138,6 +138,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'Settings / Configuration Change',
     description: 'Cloud Sync now works out of the box — the Firebase project connection is built into the app, so Settings → Cloud Sync jumps straight to "Sign In / Set Up" with no config values to type in.',
+  },
+  {
+    version: '6.9.13',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: 'Fixed Cloud Sync getting stuck on "Connecting" forever when it hit a permissions or network problem (most commonly unpublished Firestore rules) — it now surfaces a clear "Sync error" with guidance instead of hanging silently.',
   },
 ];
 

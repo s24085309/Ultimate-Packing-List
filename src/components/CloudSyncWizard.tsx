@@ -229,9 +229,16 @@ export default function CloudSyncWizard({ onClose }: { onClose: () => void }) {
                 same email and password. Your trips will appear automatically.
               </p>
               <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>
-                Status: <b style={{ color: cloudStatus === 'synced' ? '#4ade80' : 'var(--text-hi)' }}>{cloudStatus}</b>
+                Status: <b style={{ color: cloudStatus === 'synced' ? '#4ade80' : cloudStatus === 'error' ? '#fda4af' : 'var(--text-hi)' }}>{cloudStatus}</b>
                 {cloudEmail && <> · {cloudEmail}</>}
               </div>
+              {cloudStatus === 'error' && (
+                <p style={{ margin: 0, fontSize: 12.5, color: '#fda4af', lineHeight: 1.6, maxWidth: 360 }}>
+                  Signed in, but sync can't reach your data. This almost always means the Firestore security
+                  rules weren't published — go back to step 4, paste the rules snippet into
+                  Firestore Database → Rules, and click <b>Publish</b>.
+                </p>
+              )}
               <div className={s.row}>
                 <button className={s.btnPrimary} onClick={onClose}>Done</button>
                 <button className={s.btnGhost} style={{ color: '#fda4af' }} onClick={disconnect}>Disconnect</button>

@@ -25,15 +25,25 @@ export function startCloudSync() {
     uid = user?.uid ?? null;
     if (!user) { setCloudStatus('signed-out', null); return; }
     setCloudStatus('connecting', user.email);
-    unsubState = watchCloudState(config, user.uid, payload => {
-      if (payload) {
-        suppressPush = true;
-        useStore.getState().importBackup(JSON.stringify(payload)).finally(() => {
-          setTimeout(() => { suppressPush = false; }, 300);
-        });
-      }
-      setCloudStatus('synced', user.email);
-    });
+    // Backstop: if Firestore never calls back (blocked rules, no network, etc.)
+    // don't leave the status stuck on "Connecting" forever.
+    const stallTimer = window.setTimeout(() => {
+      if (useStore.getState().cloudStatus === 'connecting') setCloudStatus('error', user.email);
+    }, 12000);
+    unsubState = watchCloudState(
+      config, user.uid,
+      payload => {
+        window.clearTimeout(stallTimer);
+        if (payload) {
+          suppressPush = true;
+          useStore.getState().importBackup(JSON.stringify(payload)).finally(() => {
+            setTimeout(() => { suppressPush = false; }, 300);
+          });
+        }
+        setCloudStatus('synced', user.email);
+      },
+      () => { window.clearTimeout(stallTimer); setCloudStatus('error', user.email); },
+    );
   });
 
   useStore.subscribe((state, prev) => {

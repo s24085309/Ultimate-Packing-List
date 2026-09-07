@@ -115,11 +115,16 @@ export function pushCloudState(config: FirebaseConfig, uid: string, payload: Syn
   return setDoc(doc(d, 'packingSync', uid), { ...payload, serverUpdatedAt: serverTimestamp() });
 }
 
-export function watchCloudState(config: FirebaseConfig, uid: string, cb: (payload: SyncPayload | null) => void): () => void {
+export function watchCloudState(
+  config: FirebaseConfig, uid: string,
+  cb: (payload: SyncPayload | null) => void, onError?: (err: Error) => void,
+): () => void {
   const { db: d } = getCloudApp(config);
-  return onSnapshot(doc(d, 'packingSync', uid), snap => {
-    cb(snap.exists() ? (snap.data() as SyncPayload) : null);
-  });
+  return onSnapshot(
+    doc(d, 'packingSync', uid),
+    snap => cb(snap.exists() ? (snap.data() as SyncPayload) : null),
+    err => onError?.(err),
+  );
 }
 
 export const FIRESTORE_RULES_SNIPPET = `rules_version = '2';
