@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.33';
+export const APP_VERSION = '6.9.34';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -264,6 +264,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'Bug Fix',
     description: 'Fixed the whole app shifting/clipping off to the right when text size was enlarged, and titles/headings no longer scaling along with the rest of the text — text-size scaling now uses a proper transform instead of the old zoom-based approach, which also fixes every other size-related UI quirk in one go. Also added a one-time "Connect Cloud Sync?" pop-up on first launch that takes you straight to sign-in when tapped.',
+  },
+  {
+    version: '6.9.34',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: "Fixed pull-down-to-refresh not actually picking up the newest deployed version. It was telling the service worker to activate a new version before that version had finished downloading and installing in the background, so the refresh just reloaded the same old version. It now waits for the new version to finish installing first.",
   },
 ];
 
