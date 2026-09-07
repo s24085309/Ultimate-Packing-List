@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.26';
+export const APP_VERSION = '6.9.27';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -222,6 +222,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Live weather now fetches automatically whenever you add a destination or set/change the trip dates (as long as at least one is already set), instead of requiring a tap on "Fetch Live Weather" every time.',
+  },
+  {
+    version: '6.9.27',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Typing a destination now searches for matching real places as you type (like the city search below) and lets you pick the right one from a dropdown, instead of silently guessing which city you meant.',
   },
 ];
 

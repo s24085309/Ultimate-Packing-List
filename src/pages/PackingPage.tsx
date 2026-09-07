@@ -179,19 +179,57 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
   };
 
   const [destInput, setDestInput] = useState('');
+  const [destResults, setDestResults] = useState<CityResult[]>([]);
+  const [destSearching, setDestSearching] = useState(false);
   const destinationList = useMemo(
     () => draft.destinations.split(',').map(d => d.trim()).filter(Boolean),
     [draft.destinations],
   );
 
+  // Search-as-you-type: show real city matches to pick from instead of
+  // silently guessing which "Paris" (etc.) the user meant.
+  useEffect(() => {
+    const q = destInput.trim();
+    if (q.length < 2) { setDestResults([]); return; }
+    let cancelled = false;
+    setDestSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchCities(q);
+        if (!cancelled) setDestResults(results);
+      } catch {
+        if (!cancelled) setDestResults([]);
+      } finally {
+        if (!cancelled) setDestSearching(false);
+      }
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [destInput]);
+
+  const addDestinationName = (name: string) => {
+    if (!name.trim()) return;
+    if (!destinationList.some(d => d.toLowerCase() === name.trim().toLowerCase())) {
+      set('destinations', [...destinationList, name.trim()].join(', '));
+    }
+  };
+
+  // Picking a search result: adds the exact matched place, and its
+  // coordinates go straight into "Cities for live weather" too.
+  const selectDestination = (c: CityResult) => {
+    addDestinationName(c.name);
+    addCity(c);
+    setDestInput('');
+    setDestResults([]);
+  };
+
+  // Typing a name and hitting +/Enter without picking a suggestion: add it
+  // as free text, then best-effort search for a matching city in the background.
   const addDestination = async () => {
     const name = destInput.trim();
     if (!name) return;
-    if (!destinationList.some(d => d.toLowerCase() === name.toLowerCase())) {
-      set('destinations', [...destinationList, name].join(', '));
-    }
+    addDestinationName(name);
     setDestInput('');
-    // Best-effort: auto-search and add a matching city for live weather below.
+    setDestResults([]);
     try {
       const results = await searchCities(name);
       if (results[0]) addCity(results[0]);
@@ -332,8 +370,27 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
           onChange={e => setDestInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addDestination()}
         />
-        <button className={s.btnGhost} onClick={addDestination} style={{ width: 48, padding: 0, flexShrink: 0 }}><Plus size={18} /></button>
+        <button className={s.btnGhost} onClick={addDestination} style={{ width: 48, padding: 0, flexShrink: 0 }}>
+          {destSearching ? <Loader2 size={16} className="spin" /> : <Plus size={18} />}
+        </button>
       </div>
+      {destResults.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: -6 }}>
+          {destResults.map((c, i) => (
+            <button
+              key={i} onClick={() => selectDestination(c)}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left',
+                padding: '8px 12px', borderRadius: 10, border: '1px solid var(--card-border)',
+                background: 'rgba(255,255,255,0.04)', color: 'var(--text-hi)', fontSize: 13,
+              }}
+            >
+              <span>{c.name}{c.admin1 ? `, ${c.admin1}` : ''}{c.country ? `, ${c.country}` : ''}</span>
+              <Plus size={14} />
+            </button>
+          ))}
+        </div>
+      )}
       {destinationList.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {destinationList.map((d, i) => (
