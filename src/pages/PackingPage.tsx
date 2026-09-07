@@ -230,8 +230,9 @@ function WeatherDayRow({ day, cities, onChange, onRemove, onRefetch }: {
   );
 }
 
-function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof EMPTY_TRIP_DRAFT, includeGroups?: string[]) => void; onCancel: () => void }) {
+function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof EMPTY_TRIP_DRAFT, opts?: { includeGroups?: string[]; hiddenGroups?: string[] }) => void; onCancel: () => void }) {
   const masterItems = useStore(st => st.masterPackingItems);
+  const packingItems = useStore(st => st.packingItems);
   const availableGroups = useMemo(
     () => Array.from(new Set(masterItems.filter(m => !m.archived && !m.ignored).map(m => m.group || 'Other'))).sort(),
     [masterItems],
@@ -241,6 +242,26 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
   // that's the previous (and still most common) behaviour.
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(() => new Set(availableGroups));
   const toggleGroup = (g: string) => setSelectedGroups(prev => {
+    const next = new Set(prev);
+    if (next.has(g)) next.delete(g); else next.add(g);
+    return next;
+  });
+
+  // Existing trips only: which groups to show or hide in this trip's packing
+  // view/exports — the items themselves stay put, they just stop appearing.
+  // Includes any group the trip's own items already use, not just Master
+  // Library groups, so a group renamed/removed from the library can still be
+  // toggled here.
+  const tripGroups = useMemo(
+    () => (trip ? Array.from(new Set(packingItems.filter(i => i.tripId === trip.id).map(i => i.group || 'Other'))) : []),
+    [packingItems, trip],
+  );
+  const visibilityGroups = useMemo(
+    () => Array.from(new Set([...availableGroups, ...tripGroups])).sort(),
+    [availableGroups, tripGroups],
+  );
+  const [hiddenGroups, setHiddenGroups] = useState<Set<string>>(() => new Set(trip?.hiddenGroups ?? []));
+  const toggleHiddenGroup = (g: string) => setHiddenGroups(prev => {
     const next = new Set(prev);
     if (next.has(g)) next.delete(g); else next.add(g);
     return next;
@@ -643,9 +664,38 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
         </div>
       )}
 
+      {trip && visibilityGroups.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-lo)' }}>
+            SHOW/HIDE PACKING GROUPS — untick anything you don't need for this trip; hidden groups' items stay put, they just won't show here or in exports
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={s.btnGhost} style={{ minHeight: 30, padding: '0 10px', fontSize: 12 }} onClick={() => setHiddenGroups(new Set())}>Show All</button>
+            <button className={s.btnGhost} style={{ minHeight: 30, padding: '0 10px', fontSize: 12 }} onClick={() => setHiddenGroups(new Set(visibilityGroups))}>Hide All</button>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {visibilityGroups.map(g => (
+              <label
+                key={g}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, padding: '6px 10px', borderRadius: 8,
+                  background: hiddenGroups.has(g) ? 'rgba(255,255,255,0.04)' : 'rgba(167,139,250,0.15)',
+                  color: hiddenGroups.has(g) ? 'var(--text-lo)' : 'var(--text-hi)', cursor: 'pointer',
+                }}
+              >
+                <input type="checkbox" checked={!hiddenGroups.has(g)} onChange={() => toggleHiddenGroup(g)} /> {g}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className={s.row} style={{ justifyContent: 'flex-end' }}>
         <button className={s.btnGhost} onClick={onCancel}>Cancel</button>
-        <button className={s.btnPrimary} disabled={!draft.name.trim()} onClick={() => onSave(draft, trip ? undefined : Array.from(selectedGroups))}>Save Trip</button>
+        <button
+          className={s.btnPrimary} disabled={!draft.name.trim()}
+          onClick={() => onSave(draft, trip ? { hiddenGroups: Array.from(hiddenGroups) } : { includeGroups: Array.from(selectedGroups) })}
+        >Save Trip</button>
       </div>
       <style>{`.spin { animation: tripFormSpin 0.8s linear infinite; } @keyframes tripFormSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
@@ -1329,7 +1379,7 @@ export default function PackingPage() {
       {creatingTrip && (
         <div style={{ marginBottom: 20 }}>
           <TripForm
-            onSave={(draft, includeGroups) => { addTrip(draft, includeGroups); setCreatingTrip(false); }}
+            onSave={(draft, opts) => { addTrip(draft, opts?.includeGroups); setCreatingTrip(false); }}
             onCancel={() => setCreatingTrip(false)}
           />
         </div>
@@ -1349,7 +1399,7 @@ export default function PackingPage() {
           {editingTrip ? (
             <TripForm
               trip={trip}
-              onSave={(draft) => { updateTrip(trip.id, draft); setEditingTrip(false); }}
+              onSave={(draft, opts) => { updateTrip(trip.id, { ...draft, hiddenGroups: opts?.hiddenGroups ?? [] }); setEditingTrip(false); }}
               onCancel={() => setEditingTrip(false)}
             />
           ) : (

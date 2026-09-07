@@ -124,7 +124,10 @@ export function buildExportModel(
   const days = tripDays(trip);
   allItems = allItems.map(i => i.tripId === trip.id ? { ...i, qty: effectiveQty(i, days) } : i);
 
-  let items = allItems.filter(i => i.tripId === trip.id);
+  const hiddenGroups = new Set(trip.hiddenGroups ?? []);
+  const visibleForTrip = allItems.filter(i => i.tripId === trip.id && !hiddenGroups.has(i.group || 'Other'));
+
+  let items = visibleForTrip;
   const totalItems = items.length;
   const packedItems = items.filter(i => i.packed).length;
   const progressPct = totalItems === 0 ? 0 : Math.round((packedItems / totalItems) * 100);
@@ -141,14 +144,14 @@ export function buildExportModel(
   const groups = groupBy(mainItems);
 
   const packLaterItems = viewFilter === 'all' && options.includePackLater
-    ? allItems.filter(i => i.tripId === trip.id && i.packLater && (options.includePacked || !i.packed))
+    ? visibleForTrip.filter(i => i.packLater && (options.includePacked || !i.packed))
     : [];
 
   const chargingItems = viewFilter === 'all' && options.includeCharging
-    ? allItems.filter(i => i.tripId === trip.id && i.requiresCharging && (options.includePacked || !i.packed))
+    ? visibleForTrip.filter(i => i.requiresCharging && (options.includePacked || !i.packed))
     : [];
 
-  const giftItems = allItems.filter(i => i.tripId === trip.id && i.isGift && (viewFilter !== 'all' || options.includePacked || !i.packed));
+  const giftItems = visibleForTrip.filter(i => i.isGift && (viewFilter !== 'all' || options.includePacked || !i.packed));
 
   const departureTasks = viewFilter === 'all' && options.includeDepartureTasks
     ? allTasks.filter(t => t.tripId === trip.id)

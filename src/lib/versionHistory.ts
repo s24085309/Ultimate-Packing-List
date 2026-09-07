@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.50';
+export const APP_VERSION = '6.9.51';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -366,6 +366,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'Removed the ⭐ Favourites star and its filter — Pack Later already covers "make sure this gets packed", so the star was redundant. The Excel export no longer has a Favourite column either.',
+  },
+  {
+    version: '6.9.51',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Edit Trip now has a "Show/Hide Packing Groups" section — untick any group you don\'t need for this trip (e.g. Ski Gear on a beach trip) and it disappears from the packing view and every export, without deleting the items inside it. Tick it again any time to bring it back.',
   },
 ];
 

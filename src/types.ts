@@ -35,6 +35,7 @@ export interface Trip {
   weatherNotes?: string;
   weatherDaily?: WeatherDay[];
   notes?: string;
+  hiddenGroups?: string[]; // Master Library groups hidden from this trip's packing view/exports — the items stay, they just don't show
   createdAt: number;
 }
 
