@@ -26,7 +26,8 @@ function autoWidth(sheet: ExcelJS.Worksheet) {
 }
 
 export async function buildTripXlsx(trip: Trip, allItems: PackingItem[], allTasks: DepartureTask[], model: ExportModel): Promise<Blob> {
-  const items = allItems.filter(i => i.tripId === trip.id);
+  const hiddenGroups = new Set(trip.hiddenGroups ?? []);
+  const items = allItems.filter(i => i.tripId === trip.id && !hiddenGroups.has(i.group || 'Other'));
   const tasks = allTasks.filter(t => t.tripId === trip.id);
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Ultimate Travel Packing List';

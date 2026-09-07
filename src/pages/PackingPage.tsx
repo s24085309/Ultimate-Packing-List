@@ -28,9 +28,9 @@ function groupColor(name: string): string {
   return GROUP_COLORS[hash % GROUP_COLORS.length];
 }
 
-function GroupHeader({ group, count, packed, collapsed, onToggle, onRename, extra }: {
+function GroupHeader({ group, count, packed, collapsed, onToggle, onRename, extra, complete }: {
   group: string; count: number; packed?: number; collapsed: boolean; onToggle: () => void;
-  onRename?: (newName: string) => void; extra?: ReactNode;
+  onRename?: (newName: string) => void; extra?: ReactNode; complete?: boolean;
 }) {
   const color = groupColor(group);
   const remaining = packed != null ? count - packed : 0;
@@ -70,7 +70,10 @@ function GroupHeader({ group, count, packed, collapsed, onToggle, onRename, extr
         }}
       >
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 8px 1px ${color}88`, flexShrink: 0 }} />
-        <span style={{ fontSize: 13, fontWeight: 700, color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{
+          fontSize: 13, fontWeight: 700, color: complete ? 'var(--text-lo)' : color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          textDecoration: complete ? 'line-through' : 'none',
+        }}>
           {group}{' '}
           <span style={{ opacity: 0.65, fontWeight: 600 }}>
             {packed != null ? `(${packed} / ${count})` : `(${count})`}
@@ -1308,14 +1311,15 @@ export default function PackingPage() {
 
   // While packing, groups with the fewest items still to pack float to the
   // top so you can knock them out first; a fully-packed group (nothing left)
-  // drops to the bottom, out of the way.
-  const visibleGroups = useMemo(() => {
+  // moves out of the main list entirely, into the collapsed "Packed 🥳" bucket below.
+  const { visibleGroups, packedGroups, totalTripGroups } = useMemo(() => {
     const raw = model?.groups ?? [];
     const withRemaining = raw.map(g => ({ ...g, remaining: g.items.filter(i => !i.packed).length }));
     const incomplete = withRemaining.filter(g => g.remaining > 0).sort((a, b) => a.remaining - b.remaining);
     const complete = withRemaining.filter(g => g.remaining === 0);
-    return [...incomplete, ...complete];
+    return { visibleGroups: incomplete, packedGroups: complete, totalTripGroups: withRemaining.length };
   }, [model]);
+  const [packedBucketOpen, setPackedBucketOpen] = useState(false);
   // Two independent trackers, unaffected by view filter or by packed status
   // in the item's own group — ticking an item off here (charged / cable
   // packed) is entirely separate from ticking it off in its real group.
@@ -1513,6 +1517,48 @@ export default function PackingPage() {
                 )}
               </div>
             ))}
+            {packedGroups.length > 0 && (
+              <div className="packingGroupCard" style={{ gridColumn: '1 / -1' }}>
+                <div
+                  role="button" tabIndex={0}
+                  onClick={() => setPackedBucketOpen(o => !o)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setPackedBucketOpen(o => !o); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6, width: '100%', background: 'none', border: 'none',
+                    padding: '4px 0', marginBottom: packedBucketOpen ? 8 : 0, textAlign: 'left', cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ fontSize: 15 }}>🥳</span>
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>
+                    Packed{' '}
+                    <span style={{ opacity: 0.65 }}>
+                      {packedGroups.length} / {totalTripGroups}{totalTripGroups - packedGroups.length > 0 ? ` (${totalTripGroups - packedGroups.length} outstanding)` : ''}
+                    </span>
+                  </span>
+                  <ChevronDown size={15} color="var(--text-lo)" style={{ transform: packedBucketOpen ? 'none' : 'rotate(-90deg)', transition: 'transform var(--transition-fast)' }} />
+                </div>
+                {packedBucketOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {packedGroups.map(g => (
+                      <div key={g.group}>
+                        <GroupHeader
+                          group={g.group} count={g.items.length} packed={g.items.length - g.remaining}
+                          collapsed={collapsedGroups.has(g.group)}
+                          onToggle={() => toggleGroupCollapsed(g.group)}
+                          onRename={newName => renameGroup(g.group, newName)}
+                          complete
+                        />
+                        {!collapsedGroups.has(g.group) && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                            {g.items.map(item => <ItemRow key={item.id} item={item} groups={groups} days={tripDays(trip)} />)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {filter === 'all' && chargeTrackerItems.length > 0 && (
               <TrackerGroupSection
                 title="⚡️Charge before you leave" items={chargeTrackerItems}
