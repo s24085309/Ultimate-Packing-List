@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.9';
+export const APP_VERSION = '6.9.10';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -120,6 +120,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-04',
     category: 'UI / Design Change',
     description: 'Simplified the text-size control to just A− and A+ buttons, removing the percentage readout in between.',
+  },
+  {
+    version: '6.9.10',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Departure/Return dates now open a proper calendar popup (month grid, month/year dropdowns, a "Today" shortcut) instead of the plain native date field.',
   },
 ];
 

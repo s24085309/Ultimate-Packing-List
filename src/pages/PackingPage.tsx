@@ -8,6 +8,7 @@ import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
 import SettingsModal from '../components/SettingsModal';
 import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
+import DatePicker from '../components/DatePicker';
 import { FONT_SIZE_ORDER } from '../lib/appearance';
 import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
@@ -250,11 +251,11 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, minWidth: 0 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, color: 'var(--text-lo)', marginBottom: 4 }}>DEPARTURE</div>
-          <input type="date" className={s.input} style={{ width: '100%', minWidth: 0, padding: '0 8px', fontSize: 14.5 }} value={draft.departureDate} onChange={e => set('departureDate', e.target.value)} />
+          <DatePicker value={draft.departureDate} onChange={v => set('departureDate', v)} />
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, color: 'var(--text-lo)', marginBottom: 4 }}>RETURN</div>
-          <input type="date" className={s.input} style={{ width: '100%', minWidth: 0, padding: '0 8px', fontSize: 14.5 }} value={draft.returnDate} onChange={e => set('returnDate', e.target.value)} />
+          <DatePicker value={draft.returnDate} onChange={v => set('returnDate', v)} />
         </div>
       </div>
       <input className={s.input} placeholder="Accommodation" value={draft.accommodation} onChange={e => set('accommodation', e.target.value)} />
