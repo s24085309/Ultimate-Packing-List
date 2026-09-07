@@ -26,11 +26,38 @@ function groupColor(name: string): string {
   return GROUP_COLORS[hash % GROUP_COLORS.length];
 }
 
-function GroupHeader({ group, count, packed, collapsed, onToggle, extra }: {
-  group: string; count: number; packed?: number; collapsed: boolean; onToggle: () => void; extra?: ReactNode;
+function GroupHeader({ group, count, packed, collapsed, onToggle, onRename, extra }: {
+  group: string; count: number; packed?: number; collapsed: boolean; onToggle: () => void;
+  onRename?: (newName: string) => void; extra?: ReactNode;
 }) {
   const color = groupColor(group);
   const remaining = packed != null ? count - packed : 0;
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(group);
+
+  const startEditing = () => { setDraft(group); setEditing(true); };
+  const commit = () => {
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== group) onRename?.(trimmed);
+  };
+
+  if (editing) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input
+          autoFocus
+          className={s.input}
+          style={{ flex: 1, height: 34, fontSize: 13 }}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') commit(); else if (e.key === 'Escape') setEditing(false); }}
+          onBlur={commit}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
       <button
@@ -54,6 +81,14 @@ function GroupHeader({ group, count, packed, collapsed, onToggle, extra }: {
         </span>
         <ChevronDown size={16} color="var(--text-lo)" style={{ transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform var(--transition-fast)', flexShrink: 0 }} />
       </button>
+      {onRename && (
+        <button
+          onClick={startEditing} title="Rename this group"
+          style={{ background: 'none', border: 'none', color: 'var(--text-lo)', padding: 4, flexShrink: 0 }}
+        >
+          <Pencil size={14} />
+        </button>
+      )}
       {extra && <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{extra}</span>}
     </div>
   );
@@ -695,6 +730,7 @@ function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveD
   const addMasterItemToTrip = useStore(st => st.addMasterItemToTrip);
   const moveMasterItem = useStore(st => st.moveMasterItem);
   const updateMasterItem = useStore(st => st.updateMasterItem);
+  const renameGroup = useStore(st => st.renameGroup);
   const activeTripId = useStore(st => st.activeTripId);
   const [quickName, setQuickName] = useState('');
 
@@ -708,6 +744,7 @@ function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveD
     <div>
       <GroupHeader
         group={group} count={items.length} collapsed={collapsed} onToggle={onToggleCollapsed}
+        onRename={newName => renameGroup(group, newName)}
         extra={
           <>
           {!locked && (onMoveUp || onMoveDown) && (
@@ -1064,6 +1101,7 @@ export default function PackingPage() {
   const addDepartureTask = useStore(st => st.addDepartureTask);
   const toggleDepartureTask = useStore(st => st.toggleDepartureTask);
   const removeDepartureTask = useStore(st => st.removeDepartureTask);
+  const renameGroup = useStore(st => st.renameGroup);
 
   const [creatingTrip, setCreatingTrip] = useState(false);
   const [editingTrip, setEditingTrip] = useState(false);
@@ -1281,6 +1319,7 @@ export default function PackingPage() {
                   group={g.group} count={g.items.length} packed={g.items.length - g.remaining}
                   collapsed={collapsedGroups.has(g.group)}
                   onToggle={() => toggleGroupCollapsed(g.group)}
+                  onRename={newName => renameGroup(g.group, newName)}
                 />
                 {!collapsedGroups.has(g.group) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>

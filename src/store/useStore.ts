@@ -44,6 +44,7 @@ interface Store {
   addAllMasterItemsToTrip: (tripId: string) => void;
   archiveMasterItem: (id: string) => void;
   archiveMasterGroup: (group: string) => void;
+  renameGroup: (oldName: string, newName: string) => void;
   restoreMasterItem: (id: string) => void;
   deleteMasterItemPermanently: (id: string) => void;
   toggleMasterItemIgnored: (id: string) => void;
@@ -257,6 +258,26 @@ export const useStore = create<Store>((set, get) => ({
     const updated = get().masterPackingItems.map(i => ids.includes(i.id) ? { ...i, archived: true, ignored: false } : i);
     db.masterPackingItems.bulkPut(updated.filter(i => ids.includes(i.id)));
     set({ masterPackingItems: updated });
+  },
+  // Renames a group everywhere it appears — the Master Library and every
+  // trip's packed/unpacked items — so a rename doesn't just create a
+  // second, differently-named copy of the same group.
+  renameGroup: (oldName, newName) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) return;
+    const master = get().masterPackingItems.filter(i => (i.group || 'Other') === oldName);
+    const packing = get().packingItems.filter(i => (i.group || 'Other') === oldName);
+    if (master.length === 0 && packing.length === 0) return;
+    const updatedMaster = master.map(i => ({ ...i, group: trimmed }));
+    const updatedPacking = packing.map(i => ({ ...i, group: trimmed }));
+    if (updatedMaster.length) db.masterPackingItems.bulkPut(updatedMaster);
+    if (updatedPacking.length) db.packingItems.bulkPut(updatedPacking);
+    const masterById = new Map(updatedMaster.map(i => [i.id, i]));
+    const packingById = new Map(updatedPacking.map(i => [i.id, i]));
+    set({
+      masterPackingItems: get().masterPackingItems.map(i => masterById.get(i.id) ?? i),
+      packingItems: get().packingItems.map(i => packingById.get(i.id) ?? i),
+    });
   },
 
   addDepartureTask: (tripId, text) => {

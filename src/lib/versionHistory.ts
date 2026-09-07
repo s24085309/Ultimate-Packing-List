@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.37';
+export const APP_VERSION = '6.9.38';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -288,6 +288,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'Each group heading while packing now shows how many you\'ve packed out of the total, e.g. "Shoes (1 / 6) — 5 items left to pack", updating the moment you tick an item off — instead of just the total item count.',
+  },
+  {
+    version: '6.9.38',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Group names can now be renamed — tap the pencil next to a group heading (in the Master Library or while packing a trip), type the new name, and it updates that group everywhere: the Master Library and every trip that uses it.',
   },
 ];
 
