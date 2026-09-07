@@ -819,7 +819,7 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
   );
 }
 
-function AddItemForm({ tripId, groups, days }: { tripId: string; groups: string[]; days: number }) {
+function AddItemModal({ tripId, groups, days, onClose }: { tripId: string; groups: string[]; days: number; onClose: () => void }) {
   const addItem = useStore(st => st.addPackingItem);
   const ensureMasterItem = useStore(st => st.ensureMasterItem);
   const [name, setName] = useState('');
@@ -830,7 +830,7 @@ function AddItemForm({ tripId, groups, days }: { tripId: string; groups: string[
   const [charging, setCharging] = useState(false);
   const [isGift, setIsGift] = useState(false);
   const [giftFor, setGiftFor] = useState('');
-  const [open, setOpen] = useState(false);
+  const [lastAdded, setLastAdded] = useState<string | null>(null);
 
   const submit = () => {
     if (!name.trim()) return;
@@ -851,49 +851,87 @@ function AddItemForm({ tripId, groups, days }: { tripId: string; groups: string[
       name: trimmedName, group: finalGroup, qty: finalQty, qtyPerDay: finalQtyPerDay, notes: finalNotes,
       requiresCharging: charging, isGift, giftFor: finalGiftFor,
     });
+    setLastAdded(trimmedName);
     setName(''); setNotes(''); setQty(1); setQtyPerDay(0); setCharging(false); setIsGift(false); setGiftFor('');
   };
 
   return (
-    <div className="glass" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input className={s.input} placeholder="Add an item…" value={name} onChange={e => setName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && submit()} />
-        <button className={s.btnPrimary} onClick={submit} style={{ width: 52, padding: 0, flexShrink: 0 }}><Plus size={20} /></button>
-        <button className={s.btnGhost} onClick={() => setOpen(o => !o)} style={{ width: 44, padding: 0, flexShrink: 0 }}>
-          <ChevronDown size={18} style={{ transform: open ? 'rotate(180deg)' : undefined }} />
-        </button>
-      </div>
-      {open && (
-        <>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
-            <GroupPicker value={group} groups={groups} onChange={setGroup} />
-            <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} disabled={qtyPerDay > 0} />
-          </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-lo)' }}>
-            Or per day (× {days} day{days === 1 ? '' : 's'} = {qtyPerDay > 0 ? qtyPerDay * days : '—'}):
-            <input
-              type="number" min={0} className={s.input} style={{ width: 70, height: 32 }}
-              value={qtyPerDay || ''} placeholder="0" onChange={e => setQtyPerDay(Math.max(0, Number(e.target.value) || 0))}
-            />
+    <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(5,3,10,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div className="glass" style={{ width: 'min(480px,100%)', maxHeight: '85vh', overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 800, fontSize: 18 }}>➕ Add Item</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><X size={22} /></button>
+        </div>
+        {lastAdded && <div style={{ fontSize: 12.5, color: 'var(--text-lo)' }}>✅ Added "{lastAdded}" — keep adding, or close when you're done.</div>}
+        <input
+          className={s.input} placeholder="Item name" value={name} autoFocus
+          onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()}
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+          <GroupPicker value={group} groups={groups} onChange={setGroup} />
+          <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} disabled={qtyPerDay > 0} />
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-lo)' }}>
+          Or per day (× {days} day{days === 1 ? '' : 's'} = {qtyPerDay > 0 ? qtyPerDay * days : '—'}):
+          <input
+            type="number" min={0} className={s.input} style={{ width: 70, height: 32 }}
+            value={qtyPerDay || ''} placeholder="0" onChange={e => setQtyPerDay(Math.max(0, Number(e.target.value) || 0))}
+          />
+        </label>
+        <input className={s.input} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
+        <div className={s.row} style={{ flexWrap: 'wrap', gap: 10 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
+            <input type="checkbox" checked={charging} onChange={e => setCharging(e.target.checked)} /> 🔋 Charge Me
           </label>
-          <input className={s.input} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
-          <div className={s.row} style={{ flexWrap: 'wrap', gap: 10 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
-              <input type="checkbox" checked={charging} onChange={e => setCharging(e.target.checked)} /> 🔋 Charge Me
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
-              <input type="checkbox" checked={isGift} onChange={e => {
-                setIsGift(e.target.checked);
-                if (e.target.checked && !group.trim()) setGroup(GIFTS_GROUP);
-              }} /> 🎁 Gift for a friend
-            </label>
-            {isGift && (
-              <input className={s.input} style={{ flex: 1, minWidth: 140 }} placeholder="Who's it for?" value={giftFor} onChange={e => setGiftFor(e.target.value)} />
-            )}
-          </div>
-        </>
-      )}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
+            <input type="checkbox" checked={isGift} onChange={e => {
+              setIsGift(e.target.checked);
+              if (e.target.checked && !group.trim()) setGroup(GIFTS_GROUP);
+            }} /> 🎁 Gift for a friend
+          </label>
+          {isGift && (
+            <input className={s.input} style={{ flex: 1, minWidth: 140 }} placeholder="Who's it for?" value={giftFor} onChange={e => setGiftFor(e.target.value)} />
+          )}
+        </div>
+        <div className={s.row} style={{ justifyContent: 'flex-end' }}>
+          <button className={s.btnGhost} onClick={onClose}>Close</button>
+          <button className={s.btnPrimary} disabled={!name.trim()} onClick={submit}><Plus size={16} /> Add</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Quick lookup across every item in the trip (regardless of group or the
+// current filter) so you can jump straight to one and toggle it packed,
+// unpacked, or edit it — instead of hunting through collapsed groups.
+function SearchItemsModal({ tripId, groups, days, onClose }: { tripId: string; groups: string[]; days: number; onClose: () => void }) {
+  const items = useStore(st => st.packingItems);
+  const [query, setQuery] = useState('');
+  const tripItems = useMemo(() => items.filter(i => i.tripId === tripId), [items, tripId]);
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return tripItems.filter(i => i.name.toLowerCase().includes(q));
+  }, [tripItems, query]);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(5,3,10,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div className="glass" style={{ width: 'min(560px,100%)', maxHeight: '85vh', overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 800, fontSize: 18 }}>🔎 Search Items</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><X size={22} /></button>
+        </div>
+        <input
+          className={s.input} placeholder="Search this trip's items…" value={query} autoFocus
+          onChange={e => setQuery(e.target.value)}
+        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {!query.trim() && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>Start typing to find an item.</div>}
+          {query.trim() && results.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>No items match "{query}".</div>}
+          {results.map(item => <ItemRow key={item.id} item={item} groups={groups} days={days} />)}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1293,6 +1331,8 @@ export default function PackingPage() {
   const [masterOpen, setMasterOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pastTripsOpen, setPastTripsOpen] = useState(false);
+  const [addItemOpen, setAddItemOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [taskText, setTaskText] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const toggleGroupCollapsed = (g: string) => setCollapsedGroups(prev => {
@@ -1492,9 +1532,15 @@ export default function PackingPage() {
                 {visibleGroups.every(g => collapsedGroups.has(g.group)) ? 'Expand All' : 'Collapse All'}
               </button>
             )}
+            <button
+              onClick={() => setSearchOpen(true)} title="Search items" aria-label="Search items"
+              className={s.pill} style={{ flexShrink: 0, marginLeft: 'auto', background: 'rgba(255,255,255,0.06)', color: 'var(--text-hi)', width: 40, padding: 0 }}
+            ><Search size={16} /></button>
+            <button
+              onClick={() => setAddItemOpen(true)} title="Add item" aria-label="Add item"
+              className={s.pill} style={{ flexShrink: 0, background: 'var(--grad-a)', color: 'white', width: 40, padding: 0 }}
+            ><Plus size={18} /></button>
           </div>
-
-          <AddItemForm tripId={trip.id} groups={groups} days={tripDays(trip)} />
 
           <div className="packingGroupsGrid">
             {visibleGroups.length === 0 && (
@@ -1612,6 +1658,13 @@ export default function PackingPage() {
       )}
 
       {masterOpen && <MasterLibraryModal onClose={() => setMasterOpen(false)} />}
+
+      {trip && addItemOpen && (
+        <AddItemModal tripId={trip.id} groups={groups} days={tripDays(trip)} onClose={() => setAddItemOpen(false)} />
+      )}
+      {trip && searchOpen && (
+        <SearchItemsModal tripId={trip.id} groups={groups} days={tripDays(trip)} onClose={() => setSearchOpen(false)} />
+      )}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {pastTripsOpen && (
         <PastTripsModal

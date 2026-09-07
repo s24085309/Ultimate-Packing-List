@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.53';
+export const APP_VERSION = '6.9.54';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -384,6 +384,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'A packed item\'s strikethrough text is now a proper grey, instead of just fading slightly — makes it much clearer at a glance which items are already done.',
+  },
+  {
+    version: '6.9.54',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'Add Item moved off the packing screen into a ➕ button next to the filter chips, and there\'s a new 🔎 button next to it — search any item across the whole trip by name and mark it packed/unpacked or edit it straight from the results, without hunting through collapsed groups.',
   },
 ];
 
