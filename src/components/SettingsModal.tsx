@@ -5,7 +5,7 @@ import PinPrompt from './PinPrompt';
 import VersionHistoryModal from './VersionHistoryModal';
 import CloudSyncWizard from './CloudSyncWizard';
 import { APP_VERSION } from '../lib/versionHistory';
-import { FONT_STACKS, FONT_SIZE_LABEL, effectiveTextColor } from '../lib/appearance';
+import { FONT_STACKS, FONT_SIZE_LABEL, FONT_SIZE_ORDER, effectiveTextColor } from '../lib/appearance';
 import type { FontFamilyId, FontSizeId } from '../types';
 import s from '../widgets/shared.module.css';
 
@@ -130,6 +130,18 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         </Section>
 
         <Section title="📏 FONT SIZE">
+          <div style={{ display: 'flex', alignItems: 'center', borderRadius: 999, border: '1px solid var(--card-border)', background: 'rgba(255,255,255,0.05)', overflow: 'hidden', alignSelf: 'flex-start' }}>
+            <button
+              onClick={() => updateSettings({ fontSize: FONT_SIZE_ORDER[Math.max(0, FONT_SIZE_ORDER.indexOf(settings.fontSize) - 1)] })}
+              disabled={FONT_SIZE_ORDER.indexOf(settings.fontSize) <= 0} title="Smaller text"
+              style={{ background: 'none', border: 'none', color: FONT_SIZE_ORDER.indexOf(settings.fontSize) <= 0 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: FONT_SIZE_ORDER.indexOf(settings.fontSize) <= 0 ? 0.4 : 1, minHeight: 40, padding: '0 14px', fontSize: 13, fontWeight: 800 }}
+            >A−</button>
+            <button
+              onClick={() => updateSettings({ fontSize: FONT_SIZE_ORDER[Math.min(FONT_SIZE_ORDER.length - 1, FONT_SIZE_ORDER.indexOf(settings.fontSize) + 1)] })}
+              disabled={FONT_SIZE_ORDER.indexOf(settings.fontSize) >= FONT_SIZE_ORDER.length - 1} title="Bigger text"
+              style={{ background: 'none', border: 'none', borderLeft: '1px solid var(--card-border)', color: FONT_SIZE_ORDER.indexOf(settings.fontSize) >= FONT_SIZE_ORDER.length - 1 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: FONT_SIZE_ORDER.indexOf(settings.fontSize) >= FONT_SIZE_ORDER.length - 1 ? 0.4 : 1, minHeight: 40, padding: '0 14px', fontSize: 16, fontWeight: 800 }}
+            >A+</button>
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {(Object.keys(FONT_SIZE_LABEL) as FontSizeId[]).map(id => (
               <button

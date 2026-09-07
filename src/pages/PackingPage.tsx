@@ -9,7 +9,6 @@ import PackingExportMenu from '../components/PackingExportMenu';
 import SettingsModal from '../components/SettingsModal';
 import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
 import DatePicker from '../components/DatePicker';
-import { FONT_SIZE_ORDER } from '../lib/appearance';
 import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
@@ -729,30 +728,6 @@ function PastTripsModal({ trips, onOpenTrip, onClose }: { trips: Trip[]; onOpenT
   );
 }
 
-function TextSizeControl() {
-  const fontSize = useStore(st => st.settings.fontSize);
-  const updateSettings = useStore(st => st.updateSettings);
-  const idx = FONT_SIZE_ORDER.indexOf(fontSize);
-
-  const step = (delta: number) => {
-    const next = FONT_SIZE_ORDER[Math.min(FONT_SIZE_ORDER.length - 1, Math.max(0, idx + delta))];
-    updateSettings({ fontSize: next });
-  };
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', borderRadius: 999, border: '1px solid var(--card-border)', background: 'rgba(255,255,255,0.05)', overflow: 'hidden', flexShrink: 0 }}>
-      <button
-        onClick={() => step(-1)} disabled={idx <= 0} title="Smaller text"
-        style={{ background: 'none', border: 'none', color: idx <= 0 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: idx <= 0 ? 0.4 : 1, minHeight: 40, padding: '0 14px', fontSize: 13, fontWeight: 800 }}
-      >A−</button>
-      <button
-        onClick={() => step(1)} disabled={idx >= FONT_SIZE_ORDER.length - 1} title="Bigger text"
-        style={{ background: 'none', border: 'none', borderLeft: '1px solid var(--card-border)', color: idx >= FONT_SIZE_ORDER.length - 1 ? 'var(--text-lo)' : 'var(--text-hi)', opacity: idx >= FONT_SIZE_ORDER.length - 1 ? 0.4 : 1, minHeight: 40, padding: '0 14px', fontSize: 16, fontWeight: 800 }}
-      >A+</button>
-    </div>
-  );
-}
-
 export default function PackingPage() {
   const trips = useStore(st => st.trips);
   const activeTripId = useStore(st => st.activeTripId);
@@ -797,12 +772,16 @@ export default function PackingPage() {
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 2vw, 32px)', margin: 0 }}>🧽 Spongie's Ultimate Travel Packing List</h1>
-          <span title={`App version ${APP_VERSION}`} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)', opacity: 0.6, whiteSpace: 'nowrap' }}>v{APP_VERSION}</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0, flex: '1 1 auto' }}>
+          <h1
+            style={{
+              fontFamily: 'var(--font-display)', fontSize: 'clamp(15px, 4.4vw, 32px)', margin: 0,
+              minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}
+          >🧽 Spongie's Ultimate Travel Packing List</h1>
+          <span title={`App version ${APP_VERSION}`} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-lo)', opacity: 0.6, whiteSpace: 'nowrap', flexShrink: 0 }}>v{APP_VERSION}</span>
         </div>
         <div className={s.row}>
-          <TextSizeControl />
           {pastTrips.length > 0 && (
             <button className={s.btnGhost} onClick={() => setPastTripsOpen(true)}><History size={18} /> Past Trips ({pastTrips.length})</button>
           )}

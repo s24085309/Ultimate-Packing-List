@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.13';
+export const APP_VERSION = '6.9.14';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -144,6 +144,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'Bug Fix',
     description: 'Fixed Cloud Sync getting stuck on "Connecting" forever when it hit a permissions or network problem (most commonly unpublished Firestore rules) — it now surfaces a clear "Sync error" with guidance instead of hanging silently.',
+  },
+  {
+    version: '6.9.14',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'The header title and version no longer wrap onto two lines on iPhone — the title now shrinks to fit and truncates with an ellipsis as a last resort. Moved the A− / A+ text-size buttons out of the header and into Settings → Font Size, next to the size presets.',
   },
 ];
 
