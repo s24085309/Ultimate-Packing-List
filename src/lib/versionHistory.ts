@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.39';
+export const APP_VERSION = '6.9.40';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -300,6 +300,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Three changes: (1) items already in the 🎁 Gifts group no longer show a redundant "gift" tag next to their name. (2) Creating a new trip now shows a checklist of Master Library groups to seed it with — untick anything you won\'t need (e.g. skip "Ski Gear" for a beach trip) instead of always getting everything. (3) Items can now be given a "per day" quantity instead of a flat number — e.g. underwear at 2/day on a 4-day trip packs as 8, recalculating automatically if you change the trip\'s dates.',
+  },
+  {
+    version: '6.9.40',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'On iPad (and other wide screens), the packing groups no longer leave big empty gaps beneath short groups — they now flow into columns like masonry instead of a fixed grid. Each item card is also tinted and outlined with a neon glow in its group\'s own colour, matching the colour of that group\'s heading.',
   },
 ];
 

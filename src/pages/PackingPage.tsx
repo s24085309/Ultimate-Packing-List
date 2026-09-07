@@ -673,8 +673,12 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
   }
 
   const displayQty = effectiveQty(item, days);
+  const color = groupColor(item.group);
   return (
-    <div className={s.touchRow} style={{ alignItems: 'flex-start' }}>
+    <div
+      className={s.touchRow}
+      style={{ alignItems: 'flex-start', background: `${color}22`, border: `1px solid ${color}`, boxShadow: `0 0 8px 0 ${color}66` }}
+    >
       <button className={`${s.checkCircle} ${item.packed ? s.done : ''}`} onClick={() => togglePacked(item.id)}>
         {item.packed && <span style={{ color: 'white', fontSize: 14 }}>✓</span>}
       </button>
@@ -1377,7 +1381,7 @@ export default function PackingPage() {
               </div>
             )}
             {visibleGroups.map(g => (
-              <div key={g.group}>
+              <div key={g.group} className="packingGroupCard">
                 <GroupHeader
                   group={g.group} count={g.items.length} packed={g.items.length - g.remaining}
                   collapsed={collapsedGroups.has(g.group)}
