@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.41';
+export const APP_VERSION = '6.9.42';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -312,6 +312,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Added two independent trackers while packing a trip: "⚡️Charge before you leave" and "🔌 Cables to Bring". Tap the battery icon on any item ("🔋 Charge Me") to add it to the charge tracker, and the new cable icon (outline when off, 🔌 when on) to add it to the cable tracker — each tracker has its own tick-off checkbox, completely separate from ticking the item packed in its own group.',
+  },
+  {
+    version: '6.9.42',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: 'Fixed a real bug: Settings → 🗑️ Danger Zone → "Clear All Trip Data" said "The Master Library is never touched by this" but was actually deleting it too. It now only clears trips, packing items, and departure tasks, exactly as promised.',
   },
 ];
 

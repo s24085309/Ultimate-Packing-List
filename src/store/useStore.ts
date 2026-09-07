@@ -356,9 +356,11 @@ export const useStore = create<Store>((set, get) => ({
     });
   },
   clearAllData: async () => {
+    // Deliberately leaves masterPackingItems untouched — the Settings screen
+    // explicitly promises "The Master Library is never touched by this".
     await Promise.all([
-      db.trips.clear(), db.packingItems.clear(), db.masterPackingItems.clear(), db.departureTasks.clear(),
+      db.trips.clear(), db.packingItems.clear(), db.departureTasks.clear(),
     ]);
-    set({ trips: [], packingItems: [], masterPackingItems: [], departureTasks: [], activeTripId: null });
+    set({ trips: [], packingItems: [], departureTasks: [], activeTripId: null });
   },
 }));
