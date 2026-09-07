@@ -172,6 +172,31 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
     });
   };
 
+  const [destInput, setDestInput] = useState('');
+  const destinationList = useMemo(
+    () => draft.destinations.split(',').map(d => d.trim()).filter(Boolean),
+    [draft.destinations],
+  );
+
+  const addDestination = async () => {
+    const name = destInput.trim();
+    if (!name) return;
+    if (!destinationList.some(d => d.toLowerCase() === name.toLowerCase())) {
+      set('destinations', [...destinationList, name].join(', '));
+    }
+    setDestInput('');
+    // Best-effort: auto-search and add a matching city for live weather below.
+    try {
+      const results = await searchCities(name);
+      if (results[0]) addCity(results[0]);
+    } catch {
+      // silent — the user can still add a city manually below
+    }
+  };
+  const removeDestination = (idx: number) => {
+    set('destinations', destinationList.filter((_, i) => i !== idx).join(', '));
+  };
+
   const doSearchCities = async () => {
     if (!cityQuery.trim()) return;
     setCitySearching(true);
@@ -266,7 +291,24 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
   return (
     <div className="glass" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <input className={s.input} placeholder="Trip name (e.g. Portugal Summer 2026)" value={draft.name} onChange={e => set('name', e.target.value)} />
-      <input className={s.input} placeholder="Destination(s)" value={draft.destinations} onChange={e => set('destinations', e.target.value)} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          className={s.input} placeholder="Add a destination (e.g. Lisbon)…" value={destInput}
+          onChange={e => setDestInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addDestination()}
+        />
+        <button className={s.btnGhost} onClick={addDestination} style={{ width: 48, padding: 0, flexShrink: 0 }}><Plus size={18} /></button>
+      </div>
+      {destinationList.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {destinationList.map((d, i) => (
+            <span key={i} className={s.pill} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {d}
+              <button onClick={() => removeDestination(i)} style={{ background: 'none', border: 'none', color: 'inherit', display: 'flex' }}><X size={12} /></button>
+            </span>
+          ))}
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, minWidth: 0 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, color: 'var(--text-lo)', marginBottom: 4 }}>DEPARTURE</div>

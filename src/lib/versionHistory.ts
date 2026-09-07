@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.21';
+export const APP_VERSION = '6.9.22';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -192,6 +192,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'Bug Fix',
     description: "Fixed the Daily Forecast list going stale after changing the Departure/Return dates — auto-fetched forecast rows for days outside the new date range are now dropped automatically, instead of silently showing days that no longer match the trip.",
+  },
+  {
+    version: '6.9.22',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Destinations is now a proper list — type a place and tap + (or hit Enter) to add it as a chip, with multiple destinations supported. Each one you add is automatically searched and added to "Cities for live weather" too, so Fetch Live Weather is ready to go without manually re-searching every city.',
   },
 ];
 
