@@ -21,12 +21,35 @@ export interface FirebaseConfig {
 
 const STORAGE_KEY = 'packing-cloud-config';
 
+// Baked in so Cloud Sync works out of the box, no manual setup needed.
+// Firebase web config values are meant to be public (they identify the
+// project, not authorize access) — real protection comes from the Firestore
+// security rules set up in the wizard, which scope every document to its
+// owner's signed-in uid.
+const BUILT_IN_CONFIG: FirebaseConfig = {
+  apiKey: 'AIzaSyB-EO8MAV3iO1pBYYYq1N9I8KeeW5MoUds',
+  authDomain: 'spongie-ultimate-packing-list.firebaseapp.com',
+  projectId: 'spongie-ultimate-packing-list',
+  storageBucket: 'spongie-ultimate-packing-list.firebasestorage.app',
+  messagingSenderId: '42977164077',
+  appId: '1:42977164077:web:2952ea7c9edbf5d5e7b1a4',
+};
+
 export function loadCloudConfig(): FirebaseConfig | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (raw) return JSON.parse(raw);
   } catch {
-    return null;
+    // fall through to built-in config
+  }
+  return BUILT_IN_CONFIG;
+}
+
+export function hasCustomCloudConfig(): boolean {
+  try {
+    return !!localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return false;
   }
 }
 

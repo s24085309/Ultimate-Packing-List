@@ -229,14 +229,14 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           </p>
           <div className={s.row} style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
             <span className={s.row} style={{ gap: 8 }}>
-              {cloudStatus === 'disabled' ? <CloudOff size={16} color="var(--text-lo)" /> : <Cloud size={16} color={CLOUD_STATUS_COLOR[cloudStatus]} />}
+              {cloudStatus === 'disabled' || cloudStatus === 'signed-out' ? <CloudOff size={16} color="var(--text-lo)" /> : <Cloud size={16} color={CLOUD_STATUS_COLOR[cloudStatus]} />}
               <span style={{ fontSize: 13.5 }}>
                 <b style={{ color: CLOUD_STATUS_COLOR[cloudStatus] }}>{CLOUD_STATUS_LABEL[cloudStatus]}</b>
                 {cloudEmail && <span style={{ color: 'var(--text-lo)' }}> · {cloudEmail}</span>}
               </span>
             </span>
             <button className={s.btnPrimary} onClick={() => setShowCloudWizard(true)}>
-              {cloudStatus === 'disabled' ? 'Set Up Cloud Sync' : 'Manage'}
+              {cloudStatus === 'disabled' || cloudStatus === 'signed-out' ? 'Sign In / Set Up' : 'Manage'}
             </button>
           </div>
         </Section>
