@@ -62,6 +62,7 @@ interface Store {
 
   exportBackup: () => Promise<string>;
   importBackup: (json: string) => Promise<void>;
+  importMasterLibrary: (items: Omit<MasterPackingItem, 'id'>[]) => Promise<void>;
   clearAllData: () => Promise<void>;
 }
 
@@ -354,6 +355,17 @@ export const useStore = create<Store>((set, get) => ({
       settings: importedSettings,
       activeTripId: importedTrips[0]?.id ?? null,
     });
+  },
+  // Recreates the Master Library from a plain list of items, replacing
+  // whatever's currently there — but touches ONLY masterPackingItems.
+  // Trips, packing items, departure tasks, and settings are never read or
+  // written by this, unlike importBackup (which restores everything at
+  // once and would wipe those out if you only wanted the library back).
+  importMasterLibrary: async (items) => {
+    const withIds: MasterPackingItem[] = items.map(item => ({ ...item, id: uid() }));
+    await db.masterPackingItems.clear();
+    if (withIds.length) await db.masterPackingItems.bulkAdd(withIds);
+    set({ masterPackingItems: withIds });
   },
   clearAllData: async () => {
     // Deliberately leaves masterPackingItems untouched — the Settings screen

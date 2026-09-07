@@ -25,6 +25,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const updateSettings = useStore(st => st.updateSettings);
   const exportBackup = useStore(st => st.exportBackup);
   const importBackup = useStore(st => st.importBackup);
+  const importMasterLibrary = useStore(st => st.importMasterLibrary);
   const clearAllData = useStore(st => st.clearAllData);
 
   const [showVersionPin, setShowVersionPin] = useState(false);
@@ -34,7 +35,9 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [importMsg, setImportMsg] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
   const [showCloudWizard, setShowCloudWizard] = useState(false);
+  const [importLibMsg, setImportLibMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const libFileInputRef = useRef<HTMLInputElement>(null);
   const cloudStatus = useStore(st => st.cloudStatus);
   const cloudEmail = useStore(st => st.cloudEmail);
 
@@ -76,6 +79,23 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
       setImportMsg('That file could not be read as a valid backup.');
     }
     setTimeout(() => setImportMsg(''), 4000);
+  };
+
+  // Restores just the Master Library from a JSON file shaped either as
+  // {"masterPackingItems": [...]} or a bare array of items — never touches
+  // trips, packing items, or departure tasks.
+  const handleImportLibraryFile = async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const items = Array.isArray(parsed) ? parsed : parsed.masterPackingItems;
+      if (!Array.isArray(items)) throw new Error('not an array');
+      await importMasterLibrary(items);
+      setImportLibMsg(`Master Library restored: ${items.length} item${items.length === 1 ? '' : 's'}.`);
+    } catch {
+      setImportLibMsg('That file could not be read as a valid Master Library.');
+    }
+    setTimeout(() => setImportLibMsg(''), 4000);
   };
 
   return (
@@ -263,6 +283,17 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             />
             {importMsg && <span style={{ color: 'var(--text-lo)', fontSize: 13 }}>{importMsg}</span>}
           </div>
+          <div className={s.row} style={{ flexWrap: 'wrap' }}>
+            <button className={s.btnGhost} onClick={() => libFileInputRef.current?.click()}><Upload size={16} /> Import Master Library Only</button>
+            <input
+              ref={libFileInputRef} type="file" accept="application/json" style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleImportLibraryFile(f); e.target.value = ''; }}
+            />
+            {importLibMsg && <span style={{ color: 'var(--text-lo)', fontSize: 13 }}>{importLibMsg}</span>}
+          </div>
+          <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-lo)' }}>
+            "Import Master Library Only" replaces just the Master Library — your trips, packing items, and departure tasks are never touched by it, unlike a full "Import Backup".
+          </p>
         </Section>
 
         <Section title="🗑️ DANGER ZONE">
