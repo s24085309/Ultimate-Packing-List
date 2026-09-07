@@ -6,7 +6,7 @@
 import { initializeApp, deleteApp, type FirebaseApp } from 'firebase/app';
 import {
   getAuth, connectAuthEmulator, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged, type Auth, type User,
+  signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, type Auth, type User,
 } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp, type Firestore } from 'firebase/firestore';
 
@@ -76,6 +76,11 @@ export function getCloudApp(config: FirebaseConfig): { auth: Auth; db: Firestore
   // a fresh sign-in on every launch.
   app = initializeApp(config, 'packing-sync');
   auth = getAuth(app);
+  // Explicit local persistence (IndexedDB, survives app reloads/updates —
+  // it's a different storage than the service worker's HTTP cache, so a
+  // new deployed version never clears it) so you stay signed in and never
+  // have to re-enter your email/password after the app updates.
+  void setPersistence(auth, browserLocalPersistence);
   db = getFirestore(app);
   currentConfigKey = key;
   // Avoids accidentally hitting a local emulator if one happens to be running on the same machine.
