@@ -26,10 +26,11 @@ function groupColor(name: string): string {
   return GROUP_COLORS[hash % GROUP_COLORS.length];
 }
 
-function GroupHeader({ group, count, collapsed, onToggle, extra }: {
-  group: string; count: number; collapsed: boolean; onToggle: () => void; extra?: ReactNode;
+function GroupHeader({ group, count, packed, collapsed, onToggle, extra }: {
+  group: string; count: number; packed?: number; collapsed: boolean; onToggle: () => void; extra?: ReactNode;
 }) {
   const color = groupColor(group);
+  const remaining = packed != null ? count - packed : 0;
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
       <button
@@ -41,7 +42,15 @@ function GroupHeader({ group, count, collapsed, onToggle, extra }: {
       >
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 8px 1px ${color}88`, flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 700, color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {group} <span style={{ opacity: 0.65, fontWeight: 600 }}>({count})</span>
+          {group}{' '}
+          <span style={{ opacity: 0.65, fontWeight: 600 }}>
+            {packed != null ? `(${packed} / ${count})` : `(${count})`}
+          </span>
+          {packed != null && (
+            <span style={{ opacity: 0.65, fontWeight: 600 }}>
+              {' '}— {remaining > 0 ? `${remaining} item${remaining === 1 ? '' : 's'} left to pack` : 'all packed!'}
+            </span>
+          )}
         </span>
         <ChevronDown size={16} color="var(--text-lo)" style={{ transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform var(--transition-fast)', flexShrink: 0 }} />
       </button>
@@ -1269,7 +1278,7 @@ export default function PackingPage() {
             {visibleGroups.map(g => (
               <div key={g.group}>
                 <GroupHeader
-                  group={g.group} count={g.items.length}
+                  group={g.group} count={g.items.length} packed={g.items.length - g.remaining}
                   collapsed={collapsedGroups.has(g.group)}
                   onToggle={() => toggleGroupCollapsed(g.group)}
                 />

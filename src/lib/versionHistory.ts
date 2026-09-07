@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.36';
+export const APP_VERSION = '6.9.37';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -282,6 +282,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'If you\'re signed in but Cloud Sync can\'t reach the server — whether that\'s the moment the app opens or the connection drops while you\'re using it — a pop-up now appears every time, showing when you were last connected and a "Try Again" button to reconnect immediately.',
+  },
+  {
+    version: '6.9.37',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'Each group heading while packing now shows how many you\'ve packed out of the total, e.g. "Shoes (1 / 6) — 5 items left to pack", updating the moment you tick an item off — instead of just the total item count.',
   },
 ];
 
