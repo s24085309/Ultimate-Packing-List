@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.52';
+export const APP_VERSION = '6.9.53';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -378,6 +378,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'A group with everything ticked off now moves into a collapsed "Packed 🥳" section — tap it to expand and see every fully-packed group, each shown with a strikethrough. Shows how many groups are packed out of the total selected for the trip (e.g. 12/19, 7 outstanding). Fixed the Excel export\'s item counts to correctly exclude any groups you\'ve hidden for the trip.',
+  },
+  {
+    version: '6.9.53',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'A packed item\'s strikethrough text is now a proper grey, instead of just fading slightly — makes it much clearer at a glance which items are already done.',
   },
 ];
 
