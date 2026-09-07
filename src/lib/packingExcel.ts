@@ -81,7 +81,6 @@ export async function buildTripXlsx(trip: Trip, allItems: PackingItem[], allTask
     { header: 'Pack Later', key: 'packLater', width: 12 },
     { header: 'Requires Charging', key: 'charging', width: 16 },
     { header: 'Charged', key: 'charged', width: 10 },
-    { header: 'Favourite', key: 'fav', width: 10 },
     { header: 'Notes', key: 'notes', width: 30 },
   ];
   styleHeader(list.getRow(1));
@@ -89,7 +88,7 @@ export async function buildTripXlsx(trip: Trip, allItems: PackingItem[], allTask
     list.addRow({
       packed: i.packed ? 'Yes' : 'No', item: i.name, group: i.group, qty: i.qty,
       packLater: i.packLater ? 'Yes' : 'No', charging: i.requiresCharging ? 'Yes' : 'No',
-      charged: i.requiresCharging ? (i.charged ? 'Yes' : 'No') : '', fav: i.favourite ? 'Yes' : 'No',
+      charged: i.requiresCharging ? (i.charged ? 'Yes' : 'No') : '',
       notes: i.notes ?? '',
     });
   }

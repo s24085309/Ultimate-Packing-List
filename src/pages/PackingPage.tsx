@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Plus, Trash2, BatteryCharging, Battery, Star, Download, Library, Cable,
+  Plus, Trash2, BatteryCharging, Battery, Download, Library, Cable,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
   Archive, Eye, EyeOff, RotateCcw, Settings, History, Lock, Unlock, ArrowUp, ArrowDown,
   AlarmClock, AlarmClockCheck,
@@ -140,7 +140,6 @@ const FILTERS: { id: ViewFilter; label: string }[] = [
   { id: 'notPacked', label: 'Not Packed' },
   { id: 'packLater', label: 'Pack Later' },
   { id: 'charging', label: 'Charging' },
-  { id: 'favourites', label: '⭐ Favourites' },
 ];
 
 const EMPTY_TRIP_DRAFT = {
@@ -658,7 +657,6 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
   const togglePackLater = useStore(st => st.togglePackingItemPackLater);
   const toggleRequiresCharging = useStore(st => st.togglePackingItemRequiresCharging);
   const toggleNeedsCable = useStore(st => st.togglePackingItemNeedsCable);
-  const toggleFav = useStore(st => st.togglePackingItemFavourite);
   const removeItem = useStore(st => st.removePackingItem);
   const updateItem = useStore(st => st.updatePackingItem);
   const syncMasterItem = useStore(st => st.syncMasterItem);
@@ -758,9 +756,6 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
             {item.needsCable ? <span style={{ fontSize: 16 }}>🔌</span> : <Cable size={18} />}
           </button>
         )}
-        <button onClick={() => toggleFav(item.id)} style={{ background: 'none', border: 'none', color: item.favourite ? '#fbbf24' : 'var(--text-lo)' }}>
-          <Star size={18} fill={item.favourite ? '#fbbf24' : 'none'} />
-        </button>
         <button onClick={() => togglePackLater(item.id)} title="Pack later" style={{ background: 'none', border: 'none', color: item.packLater ? '#a855f7' : 'var(--text-lo)' }}>
           {item.packLater ? <AlarmClockCheck size={18} /> : <AlarmClock size={18} />}
         </button>
@@ -795,7 +790,7 @@ function AddItemForm({ tripId, groups, days }: { tripId: string; groups: string[
     addItem(tripId, {
       name: trimmedName, group: finalGroup, qty: finalQty, qtyPerDay: finalQtyPerDay, notes: finalNotes,
       packed: false, packLater: false, requiresCharging: charging, charged: false,
-      needsCable: false, cablePacked: false, favourite: false,
+      needsCable: false, cablePacked: false,
       isGift, giftFor: finalGiftFor,
     });
     // Every item added anywhere also lives in the Master Library, so it's never re-typed from scratch.

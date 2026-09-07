@@ -31,14 +31,13 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   includeCharging: true,
 };
 
-export type ViewFilter = 'all' | 'notPacked' | 'packLater' | 'charging' | 'favourites';
+export type ViewFilter = 'all' | 'notPacked' | 'packLater' | 'charging';
 
 export const VIEW_FILTER_LABEL: Record<ViewFilter, string> = {
   all: 'Everything',
   notPacked: 'Not Packed',
   packLater: 'Pack Later',
   charging: 'Charging',
-  favourites: 'Favourites',
 };
 
 export interface GroupedItems {
@@ -133,7 +132,6 @@ export function buildExportModel(
   if (viewFilter === 'notPacked') items = items.filter(i => !i.packed);
   else if (viewFilter === 'packLater') items = items.filter(i => i.packLater);
   else if (viewFilter === 'charging') items = items.filter(i => i.requiresCharging);
-  else if (viewFilter === 'favourites') items = items.filter(i => i.favourite);
   else if (!options.includePacked) items = items.filter(i => !i.packed);
 
   const mainItems = viewFilter === 'all'

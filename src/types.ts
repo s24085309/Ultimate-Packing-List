@@ -52,7 +52,6 @@ export interface PackingItem {
   charged: boolean; // ticked off within the charging tracker — independent of `packed` in the item's own group
   needsCable: boolean; // in the "🔌 Cables to Bring" tracker, independent of `packed`
   cablePacked: boolean; // ticked off within the cable tracker — independent of `packed` in the item's own group
-  favourite: boolean;
   isGift: boolean;
   giftFor?: string;
   createdAt: number;

@@ -36,7 +36,6 @@ interface Store {
   togglePackingItemPacked: (id: string) => void;
   togglePackingItemPackLater: (id: string) => void;
   togglePackingItemCharged: (id: string) => void;
-  togglePackingItemFavourite: (id: string) => void;
   togglePackingItemRequiresCharging: (id: string) => void;
   togglePackingItemNeedsCable: (id: string) => void;
   togglePackingItemCablePacked: (id: string) => void;
@@ -171,11 +170,6 @@ export const useStore = create<Store>((set, get) => ({
     if (!item) return;
     get().updatePackingItem(id, { charged: !item.charged });
   },
-  togglePackingItemFavourite: (id) => {
-    const item = get().packingItems.find(i => i.id === id);
-    if (!item) return;
-    get().updatePackingItem(id, { favourite: !item.favourite });
-  },
   // Adds/removes an item from the "⚡️Charge before you leave" tracker.
   // Whether it's actually been charged (ticked off inside that tracker) is
   // tracked separately via `charged`, independent of `packed` in its own group.
@@ -258,7 +252,7 @@ export const useStore = create<Store>((set, get) => ({
       group: m.group, name: m.name, qty: m.qty, qtyPerDay: m.qtyPerDay, notes: m.notes,
       packed: false, packLater: false, requiresCharging: m.requiresCharging, charged: false,
       needsCable: m.needsCable ?? false, cablePacked: false,
-      favourite: false, isGift: m.isGift, giftFor: m.giftFor,
+      isGift: m.isGift, giftFor: m.giftFor,
     });
   },
   addAllMasterItemsToTrip: (tripId, includeGroups) => {
@@ -274,7 +268,7 @@ export const useStore = create<Store>((set, get) => ({
         id: uid(), tripId, group: m.group, name: m.name, qty: m.qty, qtyPerDay: m.qtyPerDay, notes: m.notes,
         packed: false, packLater: false, requiresCharging: m.requiresCharging, charged: false,
         needsCable: m.needsCable ?? false, cablePacked: false,
-        favourite: false, isGift: m.isGift, giftFor: m.giftFor, createdAt: Date.now(),
+        isGift: m.isGift, giftFor: m.giftFor, createdAt: Date.now(),
       }));
     if (created.length === 0) return;
     db.packingItems.bulkPut(created);
