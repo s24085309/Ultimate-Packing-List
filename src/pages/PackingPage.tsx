@@ -1463,11 +1463,14 @@ export default function PackingPage() {
                     <span className={s.pill} style={{ background: 'rgba(168,85,247,0.18)', color: '#c4b5fd', fontWeight: 700 }}>
                       {departureCountdown(trip)}
                     </span>
+                    <span className={s.pill} style={{ background: 'rgba(168,85,247,0.18)', color: '#c4b5fd', fontWeight: 700 }}>
+                      {tripDays(trip)} day{tripDays(trip) === 1 ? '' : 's'} total
+                    </span>
                   </div>
                   <div style={{ fontSize: 13, color: 'var(--text-lo)', marginTop: 4 }}>
-                    {trip.destinations || '—'} · {formatDateRange(trip)} · {tripDays(trip)} day(s)
+                    {trip.destinations || '—'} · {formatDateRange(trip)}
                   </div>
-                  <div style={{ fontSize: 12.5, color: 'var(--text-lo)', marginTop: 2 }}>{trip.accommodation} · {trip.tripType}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text-lo)', marginTop: 2 }}>{trip.accommodation}</div>
                   {(trip.weatherConditions || trip.weatherLow != null) && (
                     <div style={{ fontSize: 12.5, color: 'var(--text-lo)', marginTop: 4 }}>
                       🌦️ {trip.weatherLow != null ? `${trip.weatherLow}°–${trip.weatherHigh ?? '?'}° · ` : ''}{trip.weatherConditions}
@@ -1492,7 +1495,7 @@ export default function PackingPage() {
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 6, marginTop: -4 }}>
                   <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40 }} onClick={() => setEditingTrip(true)}><Pencil size={15} /></button>
                   <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40, color: '#fda4af' }} onClick={() => { if (confirm(`Delete "${trip.name}" and its packing list?`)) removeTrip(trip.id); }}><Trash2 size={15} /></button>
                 </div>

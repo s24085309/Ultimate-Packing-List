@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.55';
+export const APP_VERSION = '6.9.56';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -396,6 +396,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'Moved the 🔎 Search and ➕ Add Item buttons up to the top toolbar between Export and Settings. Reordered the filter chips to All, Collapse All, Not Packed, Pack Later, and removed the Charging chip (the dedicated Charging tracker section still shows all your charging items).',
+  },
+  {
+    version: '6.9.56',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'Added a "total days" pill next to "Departs in X days" on the trip card, nudged the edit/delete buttons up slightly to sit level with it, and dropped the trip type (e.g. "· City") from underneath the accommodation line.',
   },
 ];
 
