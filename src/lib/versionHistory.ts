@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.44';
+export const APP_VERSION = '6.9.45';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -330,6 +330,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Added Settings → 💾 Backup → "Import Master Library Only" — restores just the Master Library from a JSON file without touching trips, packing items, or departure tasks, unlike a full Import Backup which replaces everything at once.',
+  },
+  {
+    version: '6.9.45',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'The 🔋 Charge Me and 🔌 cable icons on a trip item now only show up for items in the 🧑‍💻 Technology group — everywhere else, those trackers wouldn\'t make sense, so the icons no longer clutter every item row.',
   },
 ];
 

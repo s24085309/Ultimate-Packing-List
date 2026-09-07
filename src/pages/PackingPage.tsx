@@ -17,6 +17,7 @@ import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity
 import s from '../widgets/shared.module.css';
 
 const GIFTS_GROUP = '🎁 Gifts';
+const TECH_GROUP = '🧑‍💻 Technology';
 const EMPTY_GROUP_ORDER: string[] = [];
 
 const GROUP_COLORS = ['#f87171', '#fb923c', '#fbbf24', '#4ade80', '#22d3ee', '#60a5fa', '#a78bfa', '#f472b6', '#2dd4bf', '#facc15'];
@@ -732,20 +733,24 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
         {item.notes && <div style={{ fontSize: 12, color: 'var(--text-lo)', marginTop: 2 }}>{item.notes}</div>}
       </div>
       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-        <button
-          onClick={() => toggleRequiresCharging(item.id)}
-          title={item.requiresCharging ? '🔋 In the charge tracker — tap to remove' : '🔋 Charge Me'}
-          style={{ background: 'none', border: 'none', color: item.requiresCharging ? '#22d3ee' : 'var(--text-lo)' }}
-        >
-          {item.requiresCharging ? <BatteryCharging size={18} /> : <Battery size={18} />}
-        </button>
-        <button
-          onClick={() => toggleNeedsCable(item.id)}
-          title={item.needsCable ? '🔌 In the cable tracker — tap to remove' : 'Remember a cable for this'}
-          style={{ background: 'none', border: 'none', color: item.needsCable ? '#22d3ee' : 'var(--text-lo)', display: 'flex', alignItems: 'center' }}
-        >
-          {item.needsCable ? <span style={{ fontSize: 16 }}>🔌</span> : <Cable size={18} />}
-        </button>
+        {item.group === TECH_GROUP && (
+          <button
+            onClick={() => toggleRequiresCharging(item.id)}
+            title={item.requiresCharging ? '🔋 In the charge tracker — tap to remove' : '🔋 Charge Me'}
+            style={{ background: 'none', border: 'none', color: item.requiresCharging ? '#22d3ee' : 'var(--text-lo)' }}
+          >
+            {item.requiresCharging ? <BatteryCharging size={18} /> : <Battery size={18} />}
+          </button>
+        )}
+        {item.group === TECH_GROUP && (
+          <button
+            onClick={() => toggleNeedsCable(item.id)}
+            title={item.needsCable ? '🔌 In the cable tracker — tap to remove' : 'Remember a cable for this'}
+            style={{ background: 'none', border: 'none', color: item.needsCable ? '#22d3ee' : 'var(--text-lo)', display: 'flex', alignItems: 'center' }}
+          >
+            {item.needsCable ? <span style={{ fontSize: 16 }}>🔌</span> : <Cable size={18} />}
+          </button>
+        )}
         <button onClick={() => toggleFav(item.id)} style={{ background: 'none', border: 'none', color: item.favourite ? '#fbbf24' : 'var(--text-lo)' }}>
           <Star size={18} fill={item.favourite ? '#fbbf24' : 'none'} />
         </button>
@@ -911,13 +916,15 @@ function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveD
                 {i.requiresCharging && <span className={s.pill} style={{ marginLeft: 8, background: 'rgba(34,211,238,0.15)', color: '#22d3ee' }}>🔋 charging</span>}
                 {i.ignored && <span className={s.pill} style={{ marginLeft: 8 }}>🙈 ignored</span>}
               </div>
-              <button
-                onClick={() => updateMasterItem(i.id, { requiresCharging: !i.requiresCharging })}
-                title={i.requiresCharging ? '🔋 In the charge tracker — tap to remove' : '🔋 Charge Me'}
-                style={{ background: 'none', border: 'none', color: i.requiresCharging ? '#22d3ee' : 'var(--text-lo)' }}
-              >
-                {i.requiresCharging ? <BatteryCharging size={16} /> : <Battery size={16} />}
-              </button>
+              {group === TECH_GROUP && (
+                <button
+                  onClick={() => updateMasterItem(i.id, { requiresCharging: !i.requiresCharging })}
+                  title={i.requiresCharging ? '🔋 In the charge tracker — tap to remove' : '🔋 Charge Me'}
+                  style={{ background: 'none', border: 'none', color: i.requiresCharging ? '#22d3ee' : 'var(--text-lo)' }}
+                >
+                  {i.requiresCharging ? <BatteryCharging size={16} /> : <Battery size={16} />}
+                </button>
+              )}
               <div style={{ maxWidth: 110 }}>
                 <GroupPicker
                   value={group} groups={allGroups.includes(group) ? allGroups : [...allGroups, group].filter(Boolean)}
