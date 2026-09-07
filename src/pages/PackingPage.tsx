@@ -9,6 +9,7 @@ import PackingExportMenu from '../components/PackingExportMenu';
 import SettingsModal from '../components/SettingsModal';
 import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
 import DatePicker from '../components/DatePicker';
+import GroupPicker from '../components/GroupPicker';
 import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
@@ -532,12 +533,11 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(item.name);
   const [group, setGroup] = useState(item.group);
-  const [customGroup, setCustomGroup] = useState(false);
   const [qty, setQty] = useState(item.qty);
   const [notes, setNotes] = useState(item.notes ?? '');
 
   const startEdit = () => {
-    setName(item.name); setGroup(item.group); setQty(item.qty); setNotes(item.notes ?? ''); setCustomGroup(false);
+    setName(item.name); setGroup(item.group); setQty(item.qty); setNotes(item.notes ?? '');
     setEditing(true);
   };
 
@@ -565,22 +565,7 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
       <div className={s.touchRow} style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 8 }}>
         <input className={s.input} style={{ width: '100%' }} value={name} onChange={e => setName(e.target.value)} autoFocus />
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, width: '100%' }}>
-          {customGroup ? (
-            <input
-              className={s.input} placeholder="New group name" autoFocus
-              value={group} onChange={e => setGroup(e.target.value)}
-              onBlur={() => { if (!group.trim()) setCustomGroup(false); }}
-            />
-          ) : (
-            <select
-              className={s.input} value={group}
-              onChange={e => { if (e.target.value === '__new__') { setCustomGroup(true); setGroup(''); } else setGroup(e.target.value); }}
-            >
-              {groups.map(g => <option key={g} value={g}>{g}</option>)}
-              {!groups.includes(group) && <option value={group}>{group}</option>}
-              <option value="__new__">+ New group…</option>
-            </select>
-          )}
+          <GroupPicker value={group} groups={groups.includes(group) ? groups : [...groups, group].filter(Boolean)} onChange={setGroup} />
           <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} />
         </div>
         <input className={s.input} style={{ width: '100%' }} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
@@ -627,7 +612,6 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
   const ensureMasterItem = useStore(st => st.ensureMasterItem);
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
-  const [customGroup, setCustomGroup] = useState(false);
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState('');
   const [charging, setCharging] = useState(false);
@@ -651,7 +635,7 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
       name: trimmedName, group: finalGroup, qty: Math.max(1, qty), notes: finalNotes,
       requiresCharging: charging, isGift, giftFor: finalGiftFor,
     });
-    setName(''); setNotes(''); setQty(1); setCharging(false); setIsGift(false); setGiftFor(''); setCustomGroup(false);
+    setName(''); setNotes(''); setQty(1); setCharging(false); setIsGift(false); setGiftFor('');
   };
 
   return (
@@ -667,22 +651,7 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
       {open && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
-            {customGroup ? (
-              <input
-                className={s.input} placeholder="New group name (e.g. 🧼 Hygiene)" autoFocus
-                value={group} onChange={e => setGroup(e.target.value)}
-                onBlur={() => { if (!group.trim()) setCustomGroup(false); }}
-              />
-            ) : (
-              <select
-                className={s.input} value={group}
-                onChange={e => { if (e.target.value === '__new__') { setCustomGroup(true); setGroup(''); } else setGroup(e.target.value); }}
-              >
-                <option value="">Other (default)</option>
-                {groups.map(g => <option key={g} value={g}>{g}</option>)}
-                <option value="__new__">+ New group…</option>
-              </select>
-            )}
+            <GroupPicker value={group} groups={groups} onChange={setGroup} />
             <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} />
           </div>
           <input className={s.input} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
@@ -706,9 +675,9 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
   );
 }
 
-function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveDown }: {
+function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveDown, collapsed, onToggleCollapsed }: {
   group: string; items: ReturnType<typeof useStore.getState>['masterPackingItems']; locked: boolean; allGroups: string[];
-  onMoveUp?: () => void; onMoveDown?: () => void;
+  onMoveUp?: () => void; onMoveDown?: () => void; collapsed: boolean; onToggleCollapsed: () => void;
 }) {
   const addMasterItem = useStore(st => st.addMasterItem);
   const archiveMasterItem = useStore(st => st.archiveMasterItem);
@@ -719,9 +688,6 @@ function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveD
   const updateMasterItem = useStore(st => st.updateMasterItem);
   const activeTripId = useStore(st => st.activeTripId);
   const [quickName, setQuickName] = useState('');
-  const [collapsed, setCollapsed] = useState(false);
-  const [newGroupForId, setNewGroupForId] = useState<string | null>(null);
-  const [newGroupText, setNewGroupText] = useState('');
 
   const quickAdd = () => {
     if (!quickName.trim()) return;
@@ -732,7 +698,7 @@ function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveD
   return (
     <div>
       <GroupHeader
-        group={group} count={items.length} collapsed={collapsed} onToggle={() => setCollapsed(c => !c)}
+        group={group} count={items.length} collapsed={collapsed} onToggle={onToggleCollapsed}
         extra={
           <>
           {!locked && (onMoveUp || onMoveDown) && (
@@ -789,38 +755,12 @@ function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveD
               >
                 {i.requiresCharging ? <BatteryCharging size={16} /> : <Battery size={16} />}
               </button>
-              {newGroupForId === i.id ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <input
-                    className={s.input} autoFocus placeholder="New group name (emoji OK)"
-                    value={newGroupText} onChange={e => setNewGroupText(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && newGroupText.trim()) { updateMasterItem(i.id, { group: newGroupText.trim() }); setNewGroupForId(null); setNewGroupText(''); }
-                      if (e.key === 'Escape') { setNewGroupForId(null); setNewGroupText(''); }
-                    }}
-                    style={{ height: 32, fontSize: 12, width: 120, padding: '0 8px' }}
-                  />
-                  <button
-                    onClick={() => { if (newGroupText.trim()) { updateMasterItem(i.id, { group: newGroupText.trim() }); setNewGroupForId(null); setNewGroupText(''); } }}
-                    style={{ background: 'none', border: 'none', color: 'var(--accent-3)' }} title="Save"
-                  ><Plus size={16} /></button>
-                  <button onClick={() => { setNewGroupForId(null); setNewGroupText(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }} title="Cancel"><X size={16} /></button>
-                </div>
-              ) : (
-              <select
-                value={group}
-                onChange={e => {
-                  if (e.target.value === '__new__') { setNewGroupForId(i.id); setNewGroupText(''); return; }
-                  updateMasterItem(i.id, { group: e.target.value });
-                }}
-                title="Move to a different group"
-                style={{ background: 'none', border: '1px solid var(--card-border)', borderRadius: 6, color: 'var(--text-lo)', fontSize: 11.5, maxWidth: 84, padding: '4px 2px' }}
-              >
-                {allGroups.map(g => <option key={g} value={g}>{g}</option>)}
-                {!allGroups.includes(group) && <option value={group}>{group}</option>}
-                <option value="__new__">+ New…</option>
-              </select>
-              )}
+              <div style={{ maxWidth: 110 }}>
+                <GroupPicker
+                  value={group} groups={allGroups.includes(group) ? allGroups : [...allGroups, group].filter(Boolean)}
+                  onChange={v => updateMasterItem(i.id, { group: v || 'Other' })}
+                />
+              </div>
               {activeTripId && (
                 <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => addMasterItemToTrip(i.id, activeTripId)}>
                   Add to trip
@@ -915,12 +855,17 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const updateSettings = useStore(st => st.updateSettings);
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
-  const [customGroup, setCustomGroup] = useState(false);
   const [isGift, setIsGift] = useState(false);
   const [giftFor, setGiftFor] = useState('');
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [chargingOpen, setChargingOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const toggleGroupCollapsed = (g: string) => setCollapsedGroups(prev => {
+    const next = new Set(prev);
+    if (next.has(g)) next.delete(g); else next.add(g);
+    return next;
+  });
 
   const activeItems = useMemo(() => masterItems.filter(m => !m.archived), [masterItems]);
   const archivedCount = masterItems.length - activeItems.length;
@@ -955,7 +900,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
   const submit = () => {
     if (!name.trim()) return;
     addMasterItem({ name: name.trim(), group: group.trim() || 'Other', qty: 1, requiresCharging: false, isGift, giftFor: isGift ? giftFor.trim() || undefined : undefined });
-    setName(''); setIsGift(false); setGiftFor(''); setCustomGroup(false);
+    setName(''); setIsGift(false); setGiftFor('');
   };
 
   return (
@@ -977,6 +922,15 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
             <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5 }} onClick={() => setArchiveOpen(true)}>
               <Archive size={14} /> Archive{archivedCount > 0 ? ` (${archivedCount})` : ''}
             </button>
+            {groups.length > 0 && (
+              <button
+                className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5 }}
+                onClick={() => setCollapsedGroups(groups.every(([g]) => collapsedGroups.has(g)) ? new Set() : new Set(groups.map(([g]) => g)))}
+              >
+                {groups.every(([g]) => collapsedGroups.has(g)) ? <Eye size={14} /> : <EyeOff size={14} />}
+                {groups.every(([g]) => collapsedGroups.has(g)) ? 'Expand All' : 'Collapse All'}
+              </button>
+            )}
             {chargingItems.length > 0 && (
               <button
                 className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36, fontSize: 12.5, color: chargingOpen ? '#22d3ee' : undefined }}
@@ -1006,22 +960,9 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
         )}
         <div style={{ display: 'flex', gap: 8 }}>
           <input className={s.input} placeholder="Item name" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
-          {customGroup ? (
-            <input
-              className={s.input} style={{ width: 140 }} placeholder="New group name" autoFocus
-              value={group} onChange={e => setGroup(e.target.value)}
-              onBlur={() => { if (!group.trim()) setCustomGroup(false); }}
-            />
-          ) : (
-            <select
-              className={s.input} style={{ width: 140 }} value={group}
-              onChange={e => { if (e.target.value === '__new__') { setCustomGroup(true); setGroup(''); } else setGroup(e.target.value); }}
-            >
-              <option value="">Other (default)</option>
-              {groups.map(([g]) => <option key={g} value={g}>{g}</option>)}
-              <option value="__new__">+ New group…</option>
-            </select>
-          )}
+          <div style={{ width: 140 }}>
+            <GroupPicker value={group} groups={groups.map(([g]) => g)} onChange={setGroup} />
+          </div>
           <button className={s.btnPrimary} onClick={submit} style={{ width: 48, padding: 0, flexShrink: 0 }}><Plus size={18} /></button>
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
@@ -1039,6 +980,7 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
               key={g} group={g} items={items} locked={locked} allGroups={groups.map(([gg]) => gg)}
               onMoveUp={idx > 0 ? () => moveGroup(g, 'up') : undefined}
               onMoveDown={idx < groups.length - 1 ? () => moveGroup(g, 'down') : undefined}
+              collapsed={collapsedGroups.has(g)} onToggleCollapsed={() => toggleGroupCollapsed(g)}
             />
           ))}
         </div>
@@ -1137,7 +1079,16 @@ export default function PackingPage() {
   const model = trip ? buildExportModel(trip, items, tasks, DEFAULT_EXPORT_OPTIONS, filter) : null;
   const status = model ? statusLine(model) : null;
 
-  const visibleGroups = model?.groups ?? [];
+  // While packing, groups with the fewest items still to pack float to the
+  // top so you can knock them out first; a fully-packed group (nothing left)
+  // drops to the bottom, out of the way.
+  const visibleGroups = useMemo(() => {
+    const raw = model?.groups ?? [];
+    const withRemaining = raw.map(g => ({ ...g, remaining: g.items.filter(i => !i.packed).length }));
+    const incomplete = withRemaining.filter(g => g.remaining > 0).sort((a, b) => a.remaining - b.remaining);
+    const complete = withRemaining.filter(g => g.remaining === 0);
+    return [...incomplete, ...complete];
+  }, [model]);
   const upcomingTrips = useMemo(() => trips.filter(t => !isPastTrip(t)), [trips]);
   const pastTrips = useMemo(() => trips.filter(isPastTrip), [trips]);
 
@@ -1295,6 +1246,16 @@ export default function PackingPage() {
                 style={{ flexShrink: 0, background: filter === f.id ? 'var(--grad-a)' : 'rgba(255,255,255,0.06)', color: filter === f.id ? 'white' : 'var(--text-hi)' }}
               >{f.label}</button>
             ))}
+            {visibleGroups.length > 0 && (
+              <button
+                onClick={() => setCollapsedGroups(visibleGroups.every(g => collapsedGroups.has(g.group)) ? new Set() : new Set(visibleGroups.map(g => g.group)))}
+                className={s.pill}
+                style={{ flexShrink: 0, background: 'rgba(255,255,255,0.06)', color: 'var(--text-hi)', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                {visibleGroups.every(g => collapsedGroups.has(g.group)) ? <Eye size={13} /> : <EyeOff size={13} />}
+                {visibleGroups.every(g => collapsedGroups.has(g.group)) ? 'Expand All' : 'Collapse All'}
+              </button>
+            )}
           </div>
 
           <AddItemForm tripId={trip.id} groups={groups} />

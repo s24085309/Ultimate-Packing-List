@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.30';
+export const APP_VERSION = '6.9.32';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -246,6 +246,18 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Master Library groups can now be reordered with ↑/↓ arrows next to each group name (hidden once you "Lock Order"), and a new "🔋 Charging" button shows every item across the whole library that needs charging — a quick "charge these before you leave" checklist independent of any one trip.',
+  },
+  {
+    version: '6.9.31',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Added "Collapse All / Expand All" for groups, in both the Master Library and while packing a trip. While packing, groups now automatically sort by how many items are still left to pack — fewest-remaining first — with a fully-packed group dropping to the bottom out of the way, instead of a fixed order.',
+  },
+  {
+    version: '6.9.32',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: 'Fixed the "choose a group" popup shifting off to the right when text size is enlarged — a known WebKit quirk with native dropdown menus under the zoom-based text scaling. Every "choose a group" control now opens the app\'s own centred pop-up (like the calendar) instead of the phone\'s native dropdown, so it always lands in the right place regardless of text size.',
   },
 ];
 
