@@ -35,10 +35,28 @@ export function startCloudSync() {
       payload => {
         window.clearTimeout(stallTimer);
         if (payload) {
-          suppressPush = true;
-          useStore.getState().importBackup(JSON.stringify(payload)).finally(() => {
-            setTimeout(() => { suppressPush = false; }, 300);
-          });
+          const local = useStore.getState();
+          const localHasData = local.trips.length > 0 || local.packingItems.length > 0 ||
+            local.masterPackingItems.length > 0 || local.departureTasks.length > 0;
+          const remoteIsEmpty = !payload.trips?.length && !payload.packingItems?.length &&
+            !payload.masterPackingItems?.length && !payload.departureTasks?.length;
+          // Cloud Sync has no merge logic — it's whole-document overwrite in
+          // both directions. If this device (or another app instance signed
+          // into the same account) briefly has an empty/thinner local state
+          // — e.g. a fresh install that hasn't pulled yet — and that gets
+          // pushed up, a normal pull-down here would silently wipe real,
+          // non-empty local data with nothing. Refuse that specific case;
+          // a real, intentional "delete everything" still applies normally
+          // since that only happens via Clear All Trip Data (which never
+          // touches the cloud sync path at all).
+          if (remoteIsEmpty && localHasData) {
+            console.warn('Cloud Sync: ignoring an empty remote snapshot — local data is non-empty, refusing to overwrite it.');
+          } else {
+            suppressPush = true;
+            useStore.getState().importBackup(JSON.stringify(payload)).finally(() => {
+              setTimeout(() => { suppressPush = false; }, 300);
+            });
+          }
         }
         setCloudStatus('synced', user.email);
       },

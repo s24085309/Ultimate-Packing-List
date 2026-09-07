@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.42';
+export const APP_VERSION = '6.9.43';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -318,6 +318,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'Bug Fix',
     description: 'Fixed a real bug: Settings → 🗑️ Danger Zone → "Clear All Trip Data" said "The Master Library is never touched by this" but was actually deleting it too. It now only clears trips, packing items, and departure tasks, exactly as promised.',
+  },
+  {
+    version: '6.9.43',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: "Fixed a real data-loss risk in Cloud Sync: it had no merge logic — every sync was a whole-document overwrite in both directions, so a device (or the other app) with an empty or thinner Master Library could silently wipe a fuller one just by opening the app, no button pressed. Cloud Sync now refuses to pull down an empty snapshot over non-empty local data.",
   },
 ];
 
