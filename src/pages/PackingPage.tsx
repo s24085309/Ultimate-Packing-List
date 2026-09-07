@@ -64,12 +64,18 @@ const EMPTY_TRIP_DRAFT = {
 
 const EMPTY_WEATHER_DAY: WeatherDay = { day: '', high: undefined, low: undefined, conditions: '' };
 
+function toLocalIso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function dateRange(start: string, end: string): string[] {
   const dates: string[] = [];
   const d = new Date(start + 'T00:00:00');
   const endD = new Date(end + 'T00:00:00');
   while (d <= endD) {
-    dates.push(d.toISOString().slice(0, 10));
+    // Local-date formatting, not toISOString() — that converts to UTC and
+    // rolls the date back a day in any timezone ahead of UTC (e.g. UTC+2).
+    dates.push(toLocalIso(d));
     d.setDate(d.getDate() + 1);
   }
   return dates;
@@ -220,6 +226,22 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
   };
   const removeCity = (idx: number) => set('cities', draft.cities.filter((_, i) => i !== idx));
 
+  // Which destination each trip day falls under. Defaults to an even split
+  // across the cities added above, but the user can override any day —
+  // e.g. "days 1-2 in Lisbon, days 3-5 in Porto" instead of an even split.
+  const [dayCityOverrides, setDayCityOverrides] = useState<Record<string, string>>({});
+  const tripDates = useMemo(
+    () => (draft.departureDate && draft.returnDate ? dateRange(draft.departureDate, draft.returnDate) : []),
+    [draft.departureDate, draft.returnDate],
+  );
+  const defaultCityForDate = useMemo(() => {
+    const assigned = assignCitiesToDates(tripDates, draft.cities);
+    const map = new Map<string, string>();
+    tripDates.forEach((date, i) => map.set(date, assigned[i]?.name));
+    return map;
+  }, [tripDates, draft.cities]);
+  const cityNameForDate = (date: string) => dayCityOverrides[date] ?? defaultCityForDate.get(date) ?? draft.cities[0]?.name;
+
   const updateSummaryFromDaily = (daily: WeatherDay[], truncated: boolean) => {
     const highs = daily.map(d => d.high).filter((n): n is number => n != null);
     const lows = daily.map(d => d.low).filter((n): n is number => n != null);
@@ -254,7 +276,10 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
         setWeatherError(`Live forecasts only cover the next ${FORECAST_HORIZON_DAYS} days — this trip is further out. Check back closer to departure, or enter days manually below.`);
         return;
       }
-      const cityForDate = assignCitiesToDates(availableDates, draft.cities);
+      const cityForDate = availableDates.map(date => {
+        const name = cityNameForDate(date);
+        return draft.cities.find(c => c.name === name) ?? draft.cities[0];
+      });
       const uniqueCities = Array.from(new Map(cityForDate.map(c => [c.name, c])).values());
       const forecastsByCity = new Map<string, ForecastDay[]>();
       await Promise.all(uniqueCities.map(async city => {
@@ -363,6 +388,26 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
                 <button onClick={() => removeCity(i)} style={{ background: 'none', border: 'none', color: 'inherit', display: 'flex' }}><X size={12} /></button>
               </span>
             ))}
+          </div>
+        )}
+
+        {draft.cities.length > 1 && tripDates.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-lo)' }}>WHICH DESTINATION EACH DAY? (confirm or adjust)</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {tripDates.map(date => (
+                <div key={date} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <span style={{ fontSize: 13 }}>{dayLabel(date)}</span>
+                  <select
+                    className={s.input} style={{ height: 34, fontSize: 12.5, width: 150, padding: '0 8px' }}
+                    value={cityNameForDate(date)}
+                    onChange={e => setDayCityOverrides(o => ({ ...o, [date]: e.target.value }))}
+                  >
+                    {draft.cities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

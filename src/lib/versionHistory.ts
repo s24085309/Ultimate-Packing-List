@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.22';
+export const APP_VERSION = '6.9.24';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -198,6 +198,18 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Destinations is now a proper list — type a place and tap + (or hit Enter) to add it as a chip, with multiple destinations supported. Each one you add is automatically searched and added to "Cities for live weather" too, so Fetch Live Weather is ready to go without manually re-searching every city.',
+  },
+  {
+    version: '6.9.23',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: "Fixed a real off-by-one: the Daily Forecast's day-range builder converted local midnight to UTC (toISOString), which rolls the date back a day in any timezone ahead of UTC — e.g. South Africa (UTC+2) — so a trip set to 11-12 Sep could fetch and label forecasts as 10-11 Sep. Now formats dates in local time throughout.",
+  },
+  {
+    version: '6.9.24',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'With 2+ destinations added, a new "Which destination each day?" list appears — defaults to an even split across your cities, but you can change any day before fetching, so the forecast (and each Daily Forecast row) reflects exactly which city you\'re in on which day, not a guess.',
   },
 ];
 
