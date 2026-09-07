@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.28';
+export const APP_VERSION = '6.9.29';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -234,6 +234,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Pull down from the top of the screen to refresh — checks for and activates the newest version of the app (not just a normal reload), with a spinning refresh icon while you pull.',
+  },
+  {
+    version: '6.9.29',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: 'Tapping a destination chip now searches for it in "Cities for live weather" above and fills in the search box, so you can pick the right match — useful when auto-add didn\'t find (or picked the wrong) city. Also fixed "+ New…" when moving a Master Library item to a new group: it now uses the app\'s own text field (which supports emoji) instead of the phone\'s native prompt dialog, which could refuse emoji the second time you tried it.',
   },
 ];
 

@@ -241,12 +241,12 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
     set('destinations', destinationList.filter((_, i) => i !== idx).join(', '));
   };
 
-  const doSearchCities = async () => {
-    if (!cityQuery.trim()) return;
+  const doSearchCitiesFor = async (query: string) => {
+    if (!query.trim()) return;
     setCitySearching(true);
     setCityError(null);
     try {
-      const results = await searchCities(cityQuery);
+      const results = await searchCities(query);
       setCityResults(results);
       if (results.length === 0) setCityError('No cities found.');
     } catch {
@@ -255,6 +255,7 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
       setCitySearching(false);
     }
   };
+  const doSearchCities = () => doSearchCitiesFor(cityQuery);
 
   const addCity = (c: CityResult) => {
     if (draft.cities.some(x => x.name === c.name && x.lat === c.lat)) return;
@@ -395,7 +396,11 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {destinationList.map((d, i) => (
             <span key={i} className={s.pill} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {d}
+              <button
+                onClick={() => { setCityQuery(d); doSearchCitiesFor(d); }}
+                title="Search this destination in Cities for live weather"
+                style={{ background: 'none', border: 'none', color: 'inherit', font: 'inherit', padding: 0 }}
+              >{d}</button>
               <button onClick={() => removeDestination(i)} style={{ background: 'none', border: 'none', color: 'inherit', display: 'flex' }}><X size={12} /></button>
             </span>
           ))}
@@ -713,6 +718,8 @@ function MasterGroupSection({ group, items, locked, allGroups }: {
   const activeTripId = useStore(st => st.activeTripId);
   const [quickName, setQuickName] = useState('');
   const [collapsed, setCollapsed] = useState(false);
+  const [newGroupForId, setNewGroupForId] = useState<string | null>(null);
+  const [newGroupText, setNewGroupText] = useState('');
 
   const quickAdd = () => {
     if (!quickName.trim()) return;
@@ -766,14 +773,28 @@ function MasterGroupSection({ group, items, locked, allGroups }: {
               >
                 {i.requiresCharging ? <BatteryCharging size={16} /> : <Battery size={16} />}
               </button>
+              {newGroupForId === i.id ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <input
+                    className={s.input} autoFocus placeholder="New group name (emoji OK)"
+                    value={newGroupText} onChange={e => setNewGroupText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newGroupText.trim()) { updateMasterItem(i.id, { group: newGroupText.trim() }); setNewGroupForId(null); setNewGroupText(''); }
+                      if (e.key === 'Escape') { setNewGroupForId(null); setNewGroupText(''); }
+                    }}
+                    style={{ height: 32, fontSize: 12, width: 120, padding: '0 8px' }}
+                  />
+                  <button
+                    onClick={() => { if (newGroupText.trim()) { updateMasterItem(i.id, { group: newGroupText.trim() }); setNewGroupForId(null); setNewGroupText(''); } }}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-3)' }} title="Save"
+                  ><Plus size={16} /></button>
+                  <button onClick={() => { setNewGroupForId(null); setNewGroupText(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }} title="Cancel"><X size={16} /></button>
+                </div>
+              ) : (
               <select
                 value={group}
                 onChange={e => {
-                  if (e.target.value === '__new__') {
-                    const next = window.prompt('New group name:', '');
-                    if (next && next.trim()) updateMasterItem(i.id, { group: next.trim() });
-                    return;
-                  }
+                  if (e.target.value === '__new__') { setNewGroupForId(i.id); setNewGroupText(''); return; }
                   updateMasterItem(i.id, { group: e.target.value });
                 }}
                 title="Move to a different group"
@@ -783,6 +804,7 @@ function MasterGroupSection({ group, items, locked, allGroups }: {
                 {!allGroups.includes(group) && <option value={group}>{group}</option>}
                 <option value="__new__">+ New…</option>
               </select>
+              )}
               {activeTripId && (
                 <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 36 }} onClick={() => addMasterItemToTrip(i.id, activeTripId)}>
                   Add to trip
