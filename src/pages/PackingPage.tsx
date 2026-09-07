@@ -1460,12 +1460,14 @@ export default function PackingPage() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <div style={{ fontWeight: 800, fontSize: 20 }}>{trip.name}</div>
-                    <span className={s.pill} style={{ background: 'rgba(168,85,247,0.18)', color: '#c4b5fd', fontWeight: 700 }}>
-                      {departureCountdown(trip)}
-                    </span>
-                    <span className={s.pill} style={{ background: 'rgba(168,85,247,0.18)', color: '#c4b5fd', fontWeight: 700 }}>
-                      {tripDays(trip)} day{tripDays(trip) === 1 ? '' : 's'} total
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
+                      <span className={s.pill} style={{ background: 'rgba(168,85,247,0.18)', color: '#c4b5fd', fontWeight: 700 }}>
+                        {departureCountdown(trip)}
+                      </span>
+                      <span className={s.pill} style={{ background: 'rgba(168,85,247,0.18)', color: '#c4b5fd', fontWeight: 700 }}>
+                        {tripDays(trip)} day{tripDays(trip) === 1 ? '' : 's'} total
+                      </span>
+                    </div>
                   </div>
                   <div style={{ fontSize: 13, color: 'var(--text-lo)', marginTop: 4 }}>
                     {trip.destinations || '—'} · {formatDateRange(trip)}

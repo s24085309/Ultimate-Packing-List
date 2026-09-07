@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.56';
+export const APP_VERSION = '6.9.57';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -402,6 +402,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'Added a "total days" pill next to "Departs in X days" on the trip card, nudged the edit/delete buttons up slightly to sit level with it, and dropped the trip type (e.g. "· City") from underneath the accommodation line.',
+  },
+  {
+    version: '6.9.57',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'The "Departs in X days" and "X days total" pills on the trip card now stay grouped together as a pair, so the total-days pill always sits directly to the right of the departure pill instead of being able to wrap onto its own line.',
   },
 ];
 
