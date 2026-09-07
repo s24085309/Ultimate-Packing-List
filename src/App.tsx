@@ -1,6 +1,7 @@
 import { useEffect, type CSSProperties } from 'react';
 import { useStore } from './store/useStore';
 import PackingPage from './pages/PackingPage';
+import PullToRefresh from './components/PullToRefresh';
 import { applyAppearance, FONT_SIZE_SCALE } from './lib/appearance';
 import { startCloudSync } from './lib/useCloudSync';
 
@@ -33,7 +34,9 @@ export default function App() {
         zoom: FONT_SIZE_SCALE[settings.fontSize],
       } as CSSProperties}
     >
-      <PackingPage />
+      <PullToRefresh>
+        <PackingPage />
+      </PullToRefresh>
     </div>
   );
 }

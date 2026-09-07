@@ -66,6 +66,10 @@ button { font-family: inherit; }
   box-shadow: 0 8px 32px rgba(0,0,0,0.35);
 }
 
+/* Loading spinners (Loader2 icons across the app) */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.8s linear infinite; transform-origin: center; }
+
 /* Animated weather icons (AnimatedWeatherIcon.tsx) */
 @keyframes wxSunPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.08); opacity: 0.85; } }
 .wxSunPulse { transform-origin: center; transform-box: fill-box; animation: wxSunPulse 2.4s ease-in-out infinite; }

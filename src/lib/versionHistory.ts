@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.27';
+export const APP_VERSION = '6.9.28';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -228,6 +228,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Typing a destination now searches for matching real places as you type (like the city search below) and lets you pick the right one from a dropdown, instead of silently guessing which city you meant.',
+  },
+  {
+    version: '6.9.28',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Pull down from the top of the screen to refresh — checks for and activates the newest version of the app (not just a normal reload), with a spinning refresh icon while you pull.',
   },
 ];
 
