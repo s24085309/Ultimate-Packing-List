@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.54';
+export const APP_VERSION = '6.9.55';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -390,6 +390,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'Add Item moved off the packing screen into a ➕ button next to the filter chips, and there\'s a new 🔎 button next to it — search any item across the whole trip by name and mark it packed/unpacked or edit it straight from the results, without hunting through collapsed groups.',
+  },
+  {
+    version: '6.9.55',
+    date: '2026-09-07',
+    category: 'UI / Design Change',
+    description: 'Moved the 🔎 Search and ➕ Add Item buttons up to the top toolbar between Export and Settings. Reordered the filter chips to All, Collapse All, Not Packed, Pack Later, and removed the Charging chip (the dedicated Charging tracker section still shows all your charging items).',
   },
 ];
 

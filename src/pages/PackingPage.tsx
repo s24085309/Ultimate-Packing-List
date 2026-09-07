@@ -139,10 +139,8 @@ function TrackerGroupSection({ title, items, checkedField, onToggle }: {
 }
 
 const FILTERS: { id: ViewFilter; label: string }[] = [
-  { id: 'all', label: 'All' },
   { id: 'notPacked', label: 'Not Packed' },
   { id: 'packLater', label: 'Pack Later' },
-  { id: 'charging', label: 'Charging' },
 ];
 
 const EMPTY_TRIP_DRAFT = {
@@ -1392,6 +1390,16 @@ export default function PackingPage() {
           <button className={s.btnPrimary} onClick={() => setExportOpen(true)} style={{ minHeight: 40, padding: '0 12px', fontSize: 13 }}>
             <Download size={16} /> Export
           </button>
+          {trip && (
+            <>
+              <button className={s.btnGhost} onClick={() => setSearchOpen(true)} title="Search items" aria-label="Search items" style={{ width: 40, minHeight: 40, padding: 0, flexShrink: 0 }}>
+                <Search size={16} />
+              </button>
+              <button className={s.btnPrimary} onClick={() => setAddItemOpen(true)} title="Add item" aria-label="Add item" style={{ width: 40, minHeight: 40, padding: 0, flexShrink: 0 }}>
+                <Plus size={18} />
+              </button>
+            </>
+          )}
           <button className={s.btnGhost} onClick={() => setSettingsOpen(true)} aria-label="Settings" style={{ width: 40, minHeight: 40, padding: 0, flexShrink: 0 }}>
             <Settings size={16} />
           </button>
@@ -1514,14 +1522,11 @@ export default function PackingPage() {
           )}
 
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
-            {FILTERS.map(f => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={s.pill}
-                style={{ flexShrink: 0, background: filter === f.id ? 'var(--grad-a)' : 'rgba(255,255,255,0.06)', color: filter === f.id ? 'white' : 'var(--text-hi)' }}
-              >{f.label}</button>
-            ))}
+            <button
+              onClick={() => setFilter('all')}
+              className={s.pill}
+              style={{ flexShrink: 0, background: filter === 'all' ? 'var(--grad-a)' : 'rgba(255,255,255,0.06)', color: filter === 'all' ? 'white' : 'var(--text-hi)' }}
+            >All</button>
             {visibleGroups.length > 0 && (
               <button
                 onClick={() => setCollapsedGroups(visibleGroups.every(g => collapsedGroups.has(g.group)) ? new Set() : new Set(visibleGroups.map(g => g.group)))}
@@ -1532,14 +1537,14 @@ export default function PackingPage() {
                 {visibleGroups.every(g => collapsedGroups.has(g.group)) ? 'Expand All' : 'Collapse All'}
               </button>
             )}
-            <button
-              onClick={() => setSearchOpen(true)} title="Search items" aria-label="Search items"
-              className={s.pill} style={{ flexShrink: 0, marginLeft: 'auto', background: 'rgba(255,255,255,0.06)', color: 'var(--text-hi)', width: 40, padding: 0 }}
-            ><Search size={16} /></button>
-            <button
-              onClick={() => setAddItemOpen(true)} title="Add item" aria-label="Add item"
-              className={s.pill} style={{ flexShrink: 0, background: 'var(--grad-a)', color: 'white', width: 40, padding: 0 }}
-            ><Plus size={18} /></button>
+            {FILTERS.map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={s.pill}
+                style={{ flexShrink: 0, background: filter === f.id ? 'var(--grad-a)' : 'rgba(255,255,255,0.06)', color: filter === f.id ? 'white' : 'var(--text-hi)' }}
+              >{f.label}</button>
+            ))}
           </div>
 
           <div className="packingGroupsGrid">
