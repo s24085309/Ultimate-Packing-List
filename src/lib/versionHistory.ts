@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.38';
+export const APP_VERSION = '6.9.39';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -294,6 +294,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Group names can now be renamed — tap the pencil next to a group heading (in the Master Library or while packing a trip), type the new name, and it updates that group everywhere: the Master Library and every trip that uses it.',
+  },
+  {
+    version: '6.9.39',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Three changes: (1) items already in the 🎁 Gifts group no longer show a redundant "gift" tag next to their name. (2) Creating a new trip now shows a checklist of Master Library groups to seed it with — untick anything you won\'t need (e.g. skip "Ski Gear" for a beach trip) instead of always getting everything. (3) Items can now be given a "per day" quantity instead of a flat number — e.g. underwear at 2/day on a 4-day trip packs as 8, recalculating automatically if you change the trip\'s dates.',
   },
 ];
 

@@ -10,7 +10,7 @@ import SettingsModal from '../components/SettingsModal';
 import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
 import DatePicker from '../components/DatePicker';
 import GroupPicker from '../components/GroupPicker';
-import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, departureCountdown, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
+import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, effectiveQty, departureCountdown, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
 import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity } from '../types';
@@ -190,7 +190,22 @@ function WeatherDayRow({ day, cities, onChange, onRemove, onRefetch }: {
   );
 }
 
-function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof EMPTY_TRIP_DRAFT) => void; onCancel: () => void }) {
+function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof EMPTY_TRIP_DRAFT, includeGroups?: string[]) => void; onCancel: () => void }) {
+  const masterItems = useStore(st => st.masterPackingItems);
+  const availableGroups = useMemo(
+    () => Array.from(new Set(masterItems.filter(m => !m.archived && !m.ignored).map(m => m.group || 'Other'))).sort(),
+    [masterItems],
+  );
+  // New trips only: which Master Library groups to seed this trip with —
+  // e.g. skip "Ski Gear" for a beach trip. Defaults to everything, since
+  // that's the previous (and still most common) behaviour.
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(() => new Set(availableGroups));
+  const toggleGroup = (g: string) => setSelectedGroups(prev => {
+    const next = new Set(prev);
+    if (next.has(g)) next.delete(g); else next.add(g);
+    return next;
+  });
+
   const [draft, setDraft] = useState(trip ? {
     name: trip.name, destinations: trip.destinations, departureDate: trip.departureDate, returnDate: trip.returnDate,
     accommodation: trip.accommodation, tripType: trip.tripType, weatherLow: trip.weatherLow, weatherHigh: trip.weatherHigh,
@@ -555,16 +570,43 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
         </button>
       </div>
       <textarea className={s.input} style={{ minHeight: 60, paddingTop: 12, resize: 'vertical' }} placeholder="Trip notes" value={draft.notes} onChange={e => set('notes', e.target.value)} />
+
+      {!trip && availableGroups.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-lo)' }}>
+            PACKING GROUPS TO INCLUDE — untick anything you won't need for this trip
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={s.btnGhost} style={{ minHeight: 30, padding: '0 10px', fontSize: 12 }} onClick={() => setSelectedGroups(new Set(availableGroups))}>All</button>
+            <button className={s.btnGhost} style={{ minHeight: 30, padding: '0 10px', fontSize: 12 }} onClick={() => setSelectedGroups(new Set())}>None</button>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {availableGroups.map(g => (
+              <label
+                key={g}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, padding: '6px 10px', borderRadius: 8,
+                  background: selectedGroups.has(g) ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: selectedGroups.has(g) ? 'var(--text-hi)' : 'var(--text-lo)', cursor: 'pointer',
+                }}
+              >
+                <input type="checkbox" checked={selectedGroups.has(g)} onChange={() => toggleGroup(g)} /> {g}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className={s.row} style={{ justifyContent: 'flex-end' }}>
         <button className={s.btnGhost} onClick={onCancel}>Cancel</button>
-        <button className={s.btnPrimary} disabled={!draft.name.trim()} onClick={() => onSave(draft)}>Save Trip</button>
+        <button className={s.btnPrimary} disabled={!draft.name.trim()} onClick={() => onSave(draft, trip ? undefined : Array.from(selectedGroups))}>Save Trip</button>
       </div>
       <style>{`.spin { animation: tripFormSpin 0.8s linear infinite; } @keyframes tripFormSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
+function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; days: number }) {
   const togglePacked = useStore(st => st.togglePackingItemPacked);
   const togglePackLater = useStore(st => st.togglePackingItemPackLater);
   const toggleCharged = useStore(st => st.togglePackingItemCharged);
@@ -578,10 +620,11 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
   const [name, setName] = useState(item.name);
   const [group, setGroup] = useState(item.group);
   const [qty, setQty] = useState(item.qty);
+  const [qtyPerDay, setQtyPerDay] = useState(item.qtyPerDay ?? 0);
   const [notes, setNotes] = useState(item.notes ?? '');
 
   const startEdit = () => {
-    setName(item.name); setGroup(item.group); setQty(item.qty); setNotes(item.notes ?? '');
+    setName(item.name); setGroup(item.group); setQty(item.qty); setQtyPerDay(item.qtyPerDay ?? 0); setNotes(item.notes ?? '');
     setEditing(true);
   };
 
@@ -590,10 +633,11 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
     const finalGroup = group.trim() || 'Other';
     const finalName = name.trim();
     const finalQty = Math.max(1, qty);
+    const finalQtyPerDay = qtyPerDay > 0 ? qtyPerDay : undefined;
     const finalNotes = notes.trim() || undefined;
-    updateItem(item.id, { name: finalName, group: finalGroup, qty: finalQty, notes: finalNotes });
+    updateItem(item.id, { name: finalName, group: finalGroup, qty: finalQty, qtyPerDay: finalQtyPerDay, notes: finalNotes });
     // Keep the Master Library entry for this item in sync with the edit.
-    syncMasterItem(item.name, { name: finalName, group: finalGroup, qty: finalQty, notes: finalNotes });
+    syncMasterItem(item.name, { name: finalName, group: finalGroup, qty: finalQty, qtyPerDay: finalQtyPerDay, notes: finalNotes });
     setEditing(false);
   };
 
@@ -610,8 +654,15 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
         <input className={s.input} style={{ width: '100%' }} value={name} onChange={e => setName(e.target.value)} autoFocus />
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, width: '100%' }}>
           <GroupPicker value={group} groups={groups.includes(group) ? groups : [...groups, group].filter(Boolean)} onChange={setGroup} />
-          <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} />
+          <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} disabled={qtyPerDay > 0} />
         </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-lo)', width: '100%' }}>
+          Or per day (× {days} day{days === 1 ? '' : 's'} = {qtyPerDay > 0 ? qtyPerDay * days : '—'}):
+          <input
+            type="number" min={0} className={s.input} style={{ width: 70, height: 32 }}
+            value={qtyPerDay || ''} placeholder="0" onChange={e => setQtyPerDay(Math.max(0, Number(e.target.value) || 0))}
+          />
+        </label>
         <input className={s.input} style={{ width: '100%' }} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
         <div className={s.row}>
           <button className={s.btnPrimary} onClick={saveEdit}>Save</button>
@@ -621,6 +672,7 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
     );
   }
 
+  const displayQty = effectiveQty(item, days);
   return (
     <div className={s.touchRow} style={{ alignItems: 'flex-start' }}>
       <button className={`${s.checkCircle} ${item.packed ? s.done : ''}`} onClick={() => togglePacked(item.id)}>
@@ -628,8 +680,9 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
       </button>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className={item.packed ? s.strike : ''} style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          {item.name}{item.qty > 1 ? ` × ${item.qty}` : ''}
-          {item.isGift && <span className={s.pill} style={{ background: 'rgba(236,72,153,0.15)', color: '#f472b6' }}>🎁 {item.giftFor || 'gift'}</span>}
+          {item.name}{displayQty > 1 ? ` × ${displayQty}` : ''}
+          {item.qtyPerDay ? <span style={{ opacity: 0.65, fontWeight: 600 }}> ({item.qtyPerDay}/day)</span> : null}
+          {item.isGift && item.group !== GIFTS_GROUP && <span className={s.pill} style={{ background: 'rgba(236,72,153,0.15)', color: '#f472b6' }}>🎁 {item.giftFor || 'gift'}</span>}
           {item.packLater && <span className={s.pill}>⏰ later</span>}
         </div>
         {item.notes && <div style={{ fontSize: 12, color: 'var(--text-lo)', marginTop: 2 }}>{item.notes}</div>}
@@ -651,12 +704,13 @@ function ItemRow({ item, groups }: { item: PackingItem; groups: string[] }) {
   );
 }
 
-function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
+function AddItemForm({ tripId, groups, days }: { tripId: string; groups: string[]; days: number }) {
   const addItem = useStore(st => st.addPackingItem);
   const ensureMasterItem = useStore(st => st.ensureMasterItem);
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
   const [qty, setQty] = useState(1);
+  const [qtyPerDay, setQtyPerDay] = useState(0);
   const [notes, setNotes] = useState('');
   const [charging, setCharging] = useState(false);
   const [isGift, setIsGift] = useState(false);
@@ -667,19 +721,21 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
     if (!name.trim()) return;
     const finalGroup = group.trim() || 'Other';
     const trimmedName = name.trim();
+    const finalQty = Math.max(1, qty);
+    const finalQtyPerDay = qtyPerDay > 0 ? qtyPerDay : undefined;
     const finalNotes = notes.trim() || undefined;
     const finalGiftFor = isGift ? giftFor.trim() || undefined : undefined;
     addItem(tripId, {
-      name: trimmedName, group: finalGroup, qty: Math.max(1, qty), notes: finalNotes,
+      name: trimmedName, group: finalGroup, qty: finalQty, qtyPerDay: finalQtyPerDay, notes: finalNotes,
       packed: false, packLater: false, requiresCharging: charging, charged: false, favourite: false,
       isGift, giftFor: finalGiftFor,
     });
     // Every item added anywhere also lives in the Master Library, so it's never re-typed from scratch.
     ensureMasterItem({
-      name: trimmedName, group: finalGroup, qty: Math.max(1, qty), notes: finalNotes,
+      name: trimmedName, group: finalGroup, qty: finalQty, qtyPerDay: finalQtyPerDay, notes: finalNotes,
       requiresCharging: charging, isGift, giftFor: finalGiftFor,
     });
-    setName(''); setNotes(''); setQty(1); setCharging(false); setIsGift(false); setGiftFor('');
+    setName(''); setNotes(''); setQty(1); setQtyPerDay(0); setCharging(false); setIsGift(false); setGiftFor('');
   };
 
   return (
@@ -696,8 +752,15 @@ function AddItemForm({ tripId, groups }: { tripId: string; groups: string[] }) {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
             <GroupPicker value={group} groups={groups} onChange={setGroup} />
-            <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} />
+            <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} disabled={qtyPerDay > 0} />
           </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-lo)' }}>
+            Or per day (× {days} day{days === 1 ? '' : 's'} = {qtyPerDay > 0 ? qtyPerDay * days : '—'}):
+            <input
+              type="number" min={0} className={s.input} style={{ width: 70, height: 32 }}
+              value={qtyPerDay || ''} placeholder="0" onChange={e => setQtyPerDay(Math.max(0, Number(e.target.value) || 0))}
+            />
+          </label>
           <input className={s.input} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
           <div className={s.row} style={{ flexWrap: 'wrap', gap: 10 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
@@ -790,7 +853,7 @@ function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveD
                 </div>
               )}
               <div style={{ flex: 1 }}>
-                {i.name}{i.isGift && <span className={s.pill} style={{ marginLeft: 8 }}>🎁 {i.giftFor || 'gift'}</span>}
+                {i.name}{i.isGift && group !== GIFTS_GROUP && <span className={s.pill} style={{ marginLeft: 8 }}>🎁 {i.giftFor || 'gift'}</span>}
                 {i.requiresCharging && <span className={s.pill} style={{ marginLeft: 8, background: 'rgba(34,211,238,0.15)', color: '#22d3ee' }}>🔋 charging</span>}
                 {i.ignored && <span className={s.pill} style={{ marginLeft: 8 }}>🙈 ignored</span>}
               </div>
@@ -1194,7 +1257,7 @@ export default function PackingPage() {
       {creatingTrip && (
         <div style={{ marginBottom: 20 }}>
           <TripForm
-            onSave={(draft) => { addTrip(draft); setCreatingTrip(false); }}
+            onSave={(draft, includeGroups) => { addTrip(draft, includeGroups); setCreatingTrip(false); }}
             onCancel={() => setCreatingTrip(false)}
           />
         </div>
@@ -1305,7 +1368,7 @@ export default function PackingPage() {
             )}
           </div>
 
-          <AddItemForm tripId={trip.id} groups={groups} />
+          <AddItemForm tripId={trip.id} groups={groups} days={tripDays(trip)} />
 
           <div className="packingGroupsGrid">
             {visibleGroups.length === 0 && (
@@ -1323,7 +1386,7 @@ export default function PackingPage() {
                 />
                 {!collapsedGroups.has(g.group) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                    {g.items.map(item => <ItemRow key={item.id} item={item} groups={groups} />)}
+                    {g.items.map(item => <ItemRow key={item.id} item={item} groups={groups} days={tripDays(trip)} />)}
                   </div>
                 )}
               </div>

@@ -43,6 +43,7 @@ export interface PackingItem {
   group: string;
   name: string;
   qty: number;
+  qtyPerDay?: number; // when set, the effective quantity is this × the trip's length in days (recalculated live if the trip dates change), overriding `qty` for display/export
   notes?: string;
   packed: boolean;
   packLater: boolean;
@@ -59,6 +60,7 @@ export interface MasterPackingItem {
   group: string;
   name: string;
   qty: number;
+  qtyPerDay?: number; // carried over to a trip item when added, so it starts off computing against that trip's length
   notes?: string;
   requiresCharging: boolean;
   isGift: boolean;

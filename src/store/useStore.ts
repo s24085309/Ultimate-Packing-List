@@ -26,7 +26,7 @@ interface Store {
   init: () => Promise<void>;
   updateSettings: (patch: Partial<Omit<AppSettings, 'id'>>) => void;
 
-  addTrip: (t: Omit<Trip, 'id' | 'createdAt'>) => string;
+  addTrip: (t: Omit<Trip, 'id' | 'createdAt'>, includeGroups?: string[]) => string;
   updateTrip: (id: string, patch: Partial<Omit<Trip, 'id'>>) => void;
   removeTrip: (id: string) => void;
 
@@ -41,7 +41,7 @@ interface Store {
   addMasterItem: (item: Omit<MasterPackingItem, 'id'>) => void;
   updateMasterItem: (id: string, patch: Partial<Omit<MasterPackingItem, 'id'>>) => void;
   addMasterItemToTrip: (masterId: string, tripId: string) => void;
-  addAllMasterItemsToTrip: (tripId: string) => void;
+  addAllMasterItemsToTrip: (tripId: string, includeGroups?: string[]) => void;
   archiveMasterItem: (id: string) => void;
   archiveMasterGroup: (group: string) => void;
   renameGroup: (oldName: string, newName: string) => void;
@@ -107,11 +107,11 @@ export const useStore = create<Store>((set, get) => ({
     set({ settings: updated });
   },
 
-  addTrip: (t) => {
+  addTrip: (t, includeGroups) => {
     const trip: Trip = { ...t, id: uid(), createdAt: Date.now() };
     db.trips.put(trip);
     set({ trips: [...get().trips, trip].sort((a, b) => a.departureDate.localeCompare(b.departureDate)), activeTripId: trip.id });
-    get().addAllMasterItemsToTrip(trip.id);
+    get().addAllMasterItemsToTrip(trip.id, includeGroups);
     return trip.id;
   },
   updateTrip: (id, patch) => {
@@ -232,19 +232,22 @@ export const useStore = create<Store>((set, get) => ({
     const m = get().masterPackingItems.find(i => i.id === masterId);
     if (!m) return;
     get().addPackingItem(tripId, {
-      group: m.group, name: m.name, qty: m.qty, notes: m.notes,
+      group: m.group, name: m.name, qty: m.qty, qtyPerDay: m.qtyPerDay, notes: m.notes,
       packed: false, packLater: false, requiresCharging: m.requiresCharging, charged: false,
       favourite: false, isGift: m.isGift, giftFor: m.giftFor,
     });
   },
-  addAllMasterItemsToTrip: (tripId) => {
-    const masterItems = get().masterPackingItems.filter(m => !m.archived && !m.ignored);
+  addAllMasterItemsToTrip: (tripId, includeGroups) => {
+    const allowed = includeGroups ? new Set(includeGroups) : null;
+    const masterItems = get().masterPackingItems.filter(
+      m => !m.archived && !m.ignored && (!allowed || allowed.has(m.group || 'Other')),
+    );
     if (masterItems.length === 0) return;
     const existing = new Set(get().packingItems.filter(i => i.tripId === tripId).map(i => `${i.group}::${i.name}`));
     const created: PackingItem[] = masterItems
       .filter(m => !existing.has(`${m.group}::${m.name}`))
       .map(m => ({
-        id: uid(), tripId, group: m.group, name: m.name, qty: m.qty, notes: m.notes,
+        id: uid(), tripId, group: m.group, name: m.name, qty: m.qty, qtyPerDay: m.qtyPerDay, notes: m.notes,
         packed: false, packLater: false, requiresCharging: m.requiresCharging, charged: false,
         favourite: false, isGift: m.isGift, giftFor: m.giftFor, createdAt: Date.now(),
       }));

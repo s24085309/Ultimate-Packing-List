@@ -104,6 +104,14 @@ export function tripDays(trip: Trip): number {
   return Math.max(1, Math.round(ms / 86400000) + 1);
 }
 
+// Items with a qtyPerDay set (e.g. "2 pairs of underwear a day") always pack
+// as qtyPerDay × the trip's length, recalculated live from the current trip
+// dates rather than baked in once at creation — so changing the trip's
+// length automatically updates how many to pack.
+export function effectiveQty(item: { qty: number; qtyPerDay?: number }, days: number): number {
+  return item.qtyPerDay ? item.qtyPerDay * Math.max(days, 1) : item.qty;
+}
+
 export function buildExportModel(
   trip: Trip,
   allItems: PackingItem[],
@@ -111,6 +119,12 @@ export function buildExportModel(
   options: ExportOptions = DEFAULT_EXPORT_OPTIONS,
   viewFilter: ViewFilter = 'all',
 ): ExportModel {
+  // Normalize qty up front so every downstream list/group/export below just
+  // reads i.qty — items with qtyPerDay set compute against this trip's own
+  // length rather than carrying a stale number from whenever they were added.
+  const days = tripDays(trip);
+  allItems = allItems.map(i => i.tripId === trip.id ? { ...i, qty: effectiveQty(i, days) } : i);
+
   let items = allItems.filter(i => i.tripId === trip.id);
   const totalItems = items.length;
   const packedItems = items.filter(i => i.packed).length;
