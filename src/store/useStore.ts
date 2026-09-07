@@ -37,6 +37,9 @@ interface Store {
   togglePackingItemPackLater: (id: string) => void;
   togglePackingItemCharged: (id: string) => void;
   togglePackingItemFavourite: (id: string) => void;
+  togglePackingItemRequiresCharging: (id: string) => void;
+  togglePackingItemNeedsCable: (id: string) => void;
+  togglePackingItemCablePacked: (id: string) => void;
 
   addMasterItem: (item: Omit<MasterPackingItem, 'id'>) => void;
   updateMasterItem: (id: string, patch: Partial<Omit<MasterPackingItem, 'id'>>) => void;
@@ -172,6 +175,25 @@ export const useStore = create<Store>((set, get) => ({
     if (!item) return;
     get().updatePackingItem(id, { favourite: !item.favourite });
   },
+  // Adds/removes an item from the "⚡️Charge before you leave" tracker.
+  // Whether it's actually been charged (ticked off inside that tracker) is
+  // tracked separately via `charged`, independent of `packed` in its own group.
+  togglePackingItemRequiresCharging: (id) => {
+    const item = get().packingItems.find(i => i.id === id);
+    if (!item) return;
+    get().updatePackingItem(id, { requiresCharging: !item.requiresCharging });
+  },
+  // Adds/removes an item from the "🔌 Cables to Bring" tracker.
+  togglePackingItemNeedsCable: (id) => {
+    const item = get().packingItems.find(i => i.id === id);
+    if (!item) return;
+    get().updatePackingItem(id, { needsCable: !item.needsCable });
+  },
+  togglePackingItemCablePacked: (id) => {
+    const item = get().packingItems.find(i => i.id === id);
+    if (!item) return;
+    get().updatePackingItem(id, { cablePacked: !item.cablePacked });
+  },
 
   addMasterItem: (item) => {
     const master: MasterPackingItem = { ...item, id: uid() };
@@ -234,6 +256,7 @@ export const useStore = create<Store>((set, get) => ({
     get().addPackingItem(tripId, {
       group: m.group, name: m.name, qty: m.qty, qtyPerDay: m.qtyPerDay, notes: m.notes,
       packed: false, packLater: false, requiresCharging: m.requiresCharging, charged: false,
+      needsCable: m.needsCable ?? false, cablePacked: false,
       favourite: false, isGift: m.isGift, giftFor: m.giftFor,
     });
   },
@@ -249,6 +272,7 @@ export const useStore = create<Store>((set, get) => ({
       .map(m => ({
         id: uid(), tripId, group: m.group, name: m.name, qty: m.qty, qtyPerDay: m.qtyPerDay, notes: m.notes,
         packed: false, packLater: false, requiresCharging: m.requiresCharging, charged: false,
+        needsCable: m.needsCable ?? false, cablePacked: false,
         favourite: false, isGift: m.isGift, giftFor: m.giftFor, createdAt: Date.now(),
       }));
     if (created.length === 0) return;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Plus, Trash2, BatteryCharging, Battery, Star, Download, Library,
+  Plus, Trash2, BatteryCharging, Battery, Star, Download, Library, Cable,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
   Archive, Eye, EyeOff, RotateCcw, Settings, History, Lock, Unlock, ArrowUp, ArrowDown,
 } from 'lucide-react';
@@ -90,6 +90,45 @@ function GroupHeader({ group, count, packed, collapsed, onToggle, onRename, extr
         </button>
       )}
       {extra && <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{extra}</span>}
+    </div>
+  );
+}
+
+// A "tracker" group: not a real packing group, but an auto-populated list
+// of items flagged for charging or a cable. Its own tick-off state
+// (charged / cablePacked) is completely independent of `packed` in the
+// item's real group — checking one never affects the other.
+function TrackerGroupSection({ title, items, checkedField, onToggle }: {
+  title: string; items: PackingItem[]; checkedField: 'charged' | 'cablePacked'; onToggle: (id: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const color = groupColor(title);
+  const checkedCount = items.filter(i => i[checkedField]).length;
+
+  return (
+    <div className="packingGroupCard">
+      <GroupHeader
+        group={title} count={items.length} packed={checkedCount}
+        collapsed={collapsed} onToggle={() => setCollapsed(c => !c)}
+      />
+      {!collapsed && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+          {items.map(i => (
+            <div
+              key={i.id} className={s.touchRow}
+              style={{ background: `${color}22`, border: `1px solid ${color}`, boxShadow: `0 0 8px 0 ${color}66` }}
+            >
+              <button className={`${s.checkCircle} ${i[checkedField] ? s.done : ''}`} onClick={() => onToggle(i.id)}>
+                {i[checkedField] && <span style={{ color: 'white', fontSize: 14 }}>✓</span>}
+              </button>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600 }}>{i.name}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-lo)' }}>{i.group}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -609,7 +648,8 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
 function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; days: number }) {
   const togglePacked = useStore(st => st.togglePackingItemPacked);
   const togglePackLater = useStore(st => st.togglePackingItemPackLater);
-  const toggleCharged = useStore(st => st.togglePackingItemCharged);
+  const toggleRequiresCharging = useStore(st => st.togglePackingItemRequiresCharging);
+  const toggleNeedsCable = useStore(st => st.togglePackingItemNeedsCable);
   const toggleFav = useStore(st => st.togglePackingItemFavourite);
   const removeItem = useStore(st => st.removePackingItem);
   const updateItem = useStore(st => st.updatePackingItem);
@@ -692,11 +732,20 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
         {item.notes && <div style={{ fontSize: 12, color: 'var(--text-lo)', marginTop: 2 }}>{item.notes}</div>}
       </div>
       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-        {item.requiresCharging && (
-          <button onClick={() => toggleCharged(item.id)} title={item.charged ? 'Charged' : 'Needs charging'} style={{ background: 'none', border: 'none', color: item.charged ? '#22d3ee' : 'var(--text-lo)' }}>
-            {item.charged ? <BatteryCharging size={18} /> : <Battery size={18} />}
-          </button>
-        )}
+        <button
+          onClick={() => toggleRequiresCharging(item.id)}
+          title={item.requiresCharging ? '🔋 In the charge tracker — tap to remove' : '🔋 Charge Me'}
+          style={{ background: 'none', border: 'none', color: item.requiresCharging ? '#22d3ee' : 'var(--text-lo)' }}
+        >
+          {item.requiresCharging ? <BatteryCharging size={18} /> : <Battery size={18} />}
+        </button>
+        <button
+          onClick={() => toggleNeedsCable(item.id)}
+          title={item.needsCable ? '🔌 In the cable tracker — tap to remove' : 'Remember a cable for this'}
+          style={{ background: 'none', border: 'none', color: item.needsCable ? '#22d3ee' : 'var(--text-lo)', display: 'flex', alignItems: 'center' }}
+        >
+          {item.needsCable ? <span style={{ fontSize: 16 }}>🔌</span> : <Cable size={18} />}
+        </button>
         <button onClick={() => toggleFav(item.id)} style={{ background: 'none', border: 'none', color: item.favourite ? '#fbbf24' : 'var(--text-lo)' }}>
           <Star size={18} fill={item.favourite ? '#fbbf24' : 'none'} />
         </button>
@@ -731,7 +780,8 @@ function AddItemForm({ tripId, groups, days }: { tripId: string; groups: string[
     const finalGiftFor = isGift ? giftFor.trim() || undefined : undefined;
     addItem(tripId, {
       name: trimmedName, group: finalGroup, qty: finalQty, qtyPerDay: finalQtyPerDay, notes: finalNotes,
-      packed: false, packLater: false, requiresCharging: charging, charged: false, favourite: false,
+      packed: false, packLater: false, requiresCharging: charging, charged: false,
+      needsCable: false, cablePacked: false, favourite: false,
       isGift, giftFor: finalGiftFor,
     });
     // Every item added anywhere also lives in the Master Library, so it's never re-typed from scratch.
@@ -768,7 +818,7 @@ function AddItemForm({ tripId, groups, days }: { tripId: string; groups: string[
           <input className={s.input} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
           <div className={s.row} style={{ flexWrap: 'wrap', gap: 10 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
-              <input type="checkbox" checked={charging} onChange={e => setCharging(e.target.checked)} /> Requires charging
+              <input type="checkbox" checked={charging} onChange={e => setCharging(e.target.checked)} /> 🔋 Charge Me
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-lo)' }}>
               <input type="checkbox" checked={isGift} onChange={e => {
@@ -863,7 +913,7 @@ function MasterGroupSection({ group, items, locked, allGroups, onMoveUp, onMoveD
               </div>
               <button
                 onClick={() => updateMasterItem(i.id, { requiresCharging: !i.requiresCharging })}
-                title={i.requiresCharging ? 'Remove the "requires charging" flag' : 'Mark as requiring charging'}
+                title={i.requiresCharging ? '🔋 In the charge tracker — tap to remove' : '🔋 Charge Me'}
                 style={{ background: 'none', border: 'none', color: i.requiresCharging ? '#22d3ee' : 'var(--text-lo)' }}
               >
                 {i.requiresCharging ? <BatteryCharging size={16} /> : <Battery size={16} />}
@@ -1169,6 +1219,8 @@ export default function PackingPage() {
   const toggleDepartureTask = useStore(st => st.toggleDepartureTask);
   const removeDepartureTask = useStore(st => st.removeDepartureTask);
   const renameGroup = useStore(st => st.renameGroup);
+  const toggleCharged = useStore(st => st.togglePackingItemCharged);
+  const toggleCablePacked = useStore(st => st.togglePackingItemCablePacked);
 
   const [creatingTrip, setCreatingTrip] = useState(false);
   const [editingTrip, setEditingTrip] = useState(false);
@@ -1203,6 +1255,11 @@ export default function PackingPage() {
     const complete = withRemaining.filter(g => g.remaining === 0);
     return [...incomplete, ...complete];
   }, [model]);
+  // Two independent trackers, unaffected by view filter or by packed status
+  // in the item's own group — ticking an item off here (charged / cable
+  // packed) is entirely separate from ticking it off in its real group.
+  const chargeTrackerItems = useMemo(() => tripItems.filter(i => i.requiresCharging), [tripItems]);
+  const cableTrackerItems = useMemo(() => tripItems.filter(i => i.needsCable), [tripItems]);
   const upcomingTrips = useMemo(() => trips.filter(t => !isPastTrip(t)), [trips]);
   const pastTrips = useMemo(() => trips.filter(isPastTrip), [trips]);
 
@@ -1395,6 +1452,18 @@ export default function PackingPage() {
                 )}
               </div>
             ))}
+            {filter === 'all' && chargeTrackerItems.length > 0 && (
+              <TrackerGroupSection
+                title="⚡️Charge before you leave" items={chargeTrackerItems}
+                checkedField="charged" onToggle={toggleCharged}
+              />
+            )}
+            {filter === 'all' && cableTrackerItems.length > 0 && (
+              <TrackerGroupSection
+                title="🔌 Cables to Bring" items={cableTrackerItems}
+                checkedField="cablePacked" onToggle={toggleCablePacked}
+              />
+            )}
           </div>
 
           {filter === 'all' && (

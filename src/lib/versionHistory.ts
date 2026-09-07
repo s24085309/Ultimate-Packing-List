@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.40';
+export const APP_VERSION = '6.9.41';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -306,6 +306,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'On iPad (and other wide screens), the packing groups no longer leave big empty gaps beneath short groups — they now flow into columns like masonry instead of a fixed grid. Each item card is also tinted and outlined with a neon glow in its group\'s own colour, matching the colour of that group\'s heading.',
+  },
+  {
+    version: '6.9.41',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Added two independent trackers while packing a trip: "⚡️Charge before you leave" and "🔌 Cables to Bring". Tap the battery icon on any item ("🔋 Charge Me") to add it to the charge tracker, and the new cable icon (outline when off, 🔌 when on) to add it to the cable tracker — each tracker has its own tick-off checkbox, completely separate from ticking the item packed in its own group.',
   },
 ];
 

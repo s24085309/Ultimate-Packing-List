@@ -47,8 +47,10 @@ export interface PackingItem {
   notes?: string;
   packed: boolean;
   packLater: boolean;
-  requiresCharging: boolean;
-  charged: boolean;
+  requiresCharging: boolean; // in the "⚡️Charge before you leave" tracker, independent of `packed`
+  charged: boolean; // ticked off within the charging tracker — independent of `packed` in the item's own group
+  needsCable: boolean; // in the "🔌 Cables to Bring" tracker, independent of `packed`
+  cablePacked: boolean; // ticked off within the cable tracker — independent of `packed` in the item's own group
   favourite: boolean;
   isGift: boolean;
   giftFor?: string;
@@ -63,6 +65,7 @@ export interface MasterPackingItem {
   qtyPerDay?: number; // carried over to a trip item when added, so it starts off computing against that trip's length
   notes?: string;
   requiresCharging: boolean;
+  needsCable?: boolean;
   isGift: boolean;
   giftFor?: string;
   archived?: boolean; // soft-deleted — hidden from the active library, restorable, or permanently deletable from the Archive
