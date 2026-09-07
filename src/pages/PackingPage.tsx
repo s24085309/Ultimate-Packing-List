@@ -143,7 +143,7 @@ const FILTERS: { id: ViewFilter; label: string }[] = [
 ];
 
 const EMPTY_TRIP_DRAFT = {
-  name: '', destinations: '', departureDate: '', returnDate: '', accommodation: '',
+  name: '', destinations: '', departureDate: '', departureTime: '', returnDate: '', accommodation: '',
   tripType: 'City' as Trip['tripType'], weatherLow: undefined as number | undefined, weatherHigh: undefined as number | undefined,
   weatherConditions: '', weatherNotes: '', notes: '', weatherDaily: [] as WeatherDay[], cities: [] as TripCity[],
 };
@@ -247,7 +247,7 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
   });
 
   const [draft, setDraft] = useState(trip ? {
-    name: trip.name, destinations: trip.destinations, departureDate: trip.departureDate, returnDate: trip.returnDate,
+    name: trip.name, destinations: trip.destinations, departureDate: trip.departureDate, departureTime: trip.departureTime ?? '', returnDate: trip.returnDate,
     accommodation: trip.accommodation, tripType: trip.tripType, weatherLow: trip.weatherLow, weatherHigh: trip.weatherHigh,
     weatherConditions: trip.weatherConditions ?? '', weatherNotes: trip.weatherNotes ?? '', notes: trip.notes ?? '',
     weatherDaily: trip.weatherDaily ?? [], cities: trip.cities ?? [],
@@ -516,6 +516,12 @@ function TripForm({ trip, onSave, onCancel }: { trip?: Trip; onSave: (t: typeof 
           <div style={{ fontSize: 11, color: 'var(--text-lo)', marginBottom: 4 }}>RETURN</div>
           <DatePicker value={draft.returnDate} onChange={v => setDateField('returnDate', v)} />
         </div>
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-lo)', marginBottom: 4 }}>
+          DEPARTURE TIME (optional — sets a "charge your devices" reminder 3 hours before)
+        </div>
+        <input type="time" className={s.input} value={draft.departureTime} onChange={e => set('departureTime', e.target.value)} />
       </div>
       <input className={s.input} placeholder="Accommodation" value={draft.accommodation} onChange={e => set('accommodation', e.target.value)} />
       <select className={s.input} value={draft.tripType} onChange={e => set('tripType', e.target.value as Trip['tripType'])}>

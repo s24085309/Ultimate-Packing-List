@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Cloud, CloudOff, X, RefreshCw } from 'lucide-react';
+import { Cloud, CloudOff, X, RefreshCw, BatteryCharging } from 'lucide-react';
 import { useStore } from './store/useStore';
 import PackingPage from './pages/PackingPage';
 import PullToRefresh from './components/PullToRefresh';
@@ -7,6 +7,7 @@ import Portal from './components/Portal';
 import CloudSyncWizard from './components/CloudSyncWizard';
 import { applyAppearance, FONT_SIZE_SCALE } from './lib/appearance';
 import { startCloudSync, restartCloudSync } from './lib/useCloudSync';
+import { useChargeReminder } from './lib/chargeReminder';
 
 const CLOUD_PROMPT_SEEN_KEY = 'spongie-cloud-prompt-seen';
 
@@ -55,6 +56,8 @@ export default function App() {
     setRetrying(true);
     restartCloudSync();
   };
+
+  const [chargeReminder, dismissChargeReminder] = useChargeReminder();
 
   if (!ready) {
     return (
@@ -164,6 +167,40 @@ export default function App() {
               >
                 <RefreshCw size={16} className={retrying ? 'spin' : ''} /> Try Again
               </button>
+            </div>
+          </div>
+        </Portal>
+      )}
+      {chargeReminder && (
+        <Portal>
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(0,0,0,0.55)', padding: 20,
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--bg-1, #1c1c1e)', borderRadius: 16, padding: 24, maxWidth: 340,
+                display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', textAlign: 'center',
+                boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+              }}
+            >
+              <button
+                onClick={dismissChargeReminder}
+                aria-label="Dismiss"
+                style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: 'var(--text-lo)', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+              <BatteryCharging size={40} color="#22d3ee" style={{ marginTop: -12 }} />
+              <div style={{ fontWeight: 800, fontSize: 18 }}>Charge your devices</div>
+              <div style={{ fontSize: 14, color: 'var(--text-lo)' }}>
+                {chargeReminder.tripName} departs in 3 hours.
+                {chargeReminder.itemNames.length > 0
+                  ? ` Still to charge: ${chargeReminder.itemNames.join(', ')}.`
+                  : ' Everything on your charge list is already charged.'}
+              </div>
             </div>
           </div>
         </Portal>

@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.45';
+export const APP_VERSION = '6.9.46';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -336,6 +336,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'UI / Design Change',
     description: 'The 🔋 Charge Me and 🔌 cable icons on a trip item now only show up for items in the 🧑‍💻 Technology group — everywhere else, those trackers wouldn\'t make sense, so the icons no longer clutter every item row.',
+  },
+  {
+    version: '6.9.46',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Trip setup now has an optional Departure Time field. When set, a "🔋 Charge your devices" reminder fires 3 hours before departure (while the app is open), listing anything still on the charge tracker that isn\'t charged yet.',
   },
 ];
 

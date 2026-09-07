@@ -24,6 +24,7 @@ export interface Trip {
   name: string;
   destinations: string;
   departureDate: string; // ISO date
+  departureTime?: string; // HH:MM, 24-hour — when set, drives the "charge your devices" reminder 3 hours before departure
   returnDate: string; // ISO date
   accommodation: string;
   tripType: TripType;
