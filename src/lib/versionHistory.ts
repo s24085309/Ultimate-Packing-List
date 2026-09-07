@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.32';
+export const APP_VERSION = '6.9.33';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -258,6 +258,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'Bug Fix',
     description: 'Fixed the "choose a group" popup shifting off to the right when text size is enlarged — a known WebKit quirk with native dropdown menus under the zoom-based text scaling. Every "choose a group" control now opens the app\'s own centred pop-up (like the calendar) instead of the phone\'s native dropdown, so it always lands in the right place regardless of text size.',
+  },
+  {
+    version: '6.9.33',
+    date: '2026-09-07',
+    category: 'Bug Fix',
+    description: 'Fixed the whole app shifting/clipping off to the right when text size was enlarged, and titles/headings no longer scaling along with the rest of the text — text-size scaling now uses a proper transform instead of the old zoom-based approach, which also fixes every other size-related UI quirk in one go. Also added a one-time "Connect Cloud Sync?" pop-up on first launch that takes you straight to sign-in when tapped.',
   },
 ];
 
