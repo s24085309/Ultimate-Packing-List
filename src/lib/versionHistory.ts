@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.10';
+export const APP_VERSION = '6.9.11';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -126,6 +126,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Departure/Return dates now open a proper calendar popup (month grid, month/year dropdowns, a "Today" shortcut) instead of the plain native date field.',
+  },
+  {
+    version: '6.9.11',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Added real-time cloud sync (Settings → Cloud Sync), backed by a free Firebase project you set up yourself with a step-by-step in-app wizard. Sign in with the same account on multiple devices and trips/Master Library stay in sync automatically.',
   },
 ];
 

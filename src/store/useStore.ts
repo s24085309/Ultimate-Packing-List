@@ -7,6 +7,8 @@ import { sortMasterItems } from '../lib/packingExport';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+export type CloudSyncStatus = 'disabled' | 'signed-out' | 'connecting' | 'synced' | 'error';
+
 interface Store {
   ready: boolean;
   trips: Trip[];
@@ -16,6 +18,9 @@ interface Store {
   settings: AppSettings;
   activeTripId: string | null;
   setActiveTripId: (id: string | null) => void;
+  cloudStatus: CloudSyncStatus;
+  cloudEmail: string | null;
+  setCloudStatus: (status: CloudSyncStatus, email?: string | null) => void;
 
   init: () => Promise<void>;
   updateSettings: (patch: Partial<Omit<AppSettings, 'id'>>) => void;
@@ -62,6 +67,9 @@ export const useStore = create<Store>((set, get) => ({
   settings: DEFAULT_SETTINGS,
   activeTripId: null,
   setActiveTripId: (id) => set({ activeTripId: id }),
+  cloudStatus: 'disabled',
+  cloudEmail: null,
+  setCloudStatus: (status, email) => set({ cloudStatus: status, cloudEmail: email !== undefined ? email : get().cloudEmail }),
 
   init: async () => {
     await seedDemoData();

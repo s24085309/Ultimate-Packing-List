@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
-import { X, Download, Upload, Sun, Moon, Lock, Unlock, Trash2 } from 'lucide-react';
+import { X, Download, Upload, Sun, Moon, Lock, Unlock, Trash2, Cloud, CloudOff } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PinPrompt from './PinPrompt';
 import VersionHistoryModal from './VersionHistoryModal';
+import CloudSyncWizard from './CloudSyncWizard';
 import { APP_VERSION } from '../lib/versionHistory';
 import { FONT_STACKS, FONT_SIZE_LABEL, effectiveTextColor } from '../lib/appearance';
 import type { FontFamilyId, FontSizeId } from '../types';
@@ -32,7 +33,17 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [pinDraft, setPinDraft] = useState('');
   const [importMsg, setImportMsg] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
+  const [showCloudWizard, setShowCloudWizard] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cloudStatus = useStore(st => st.cloudStatus);
+  const cloudEmail = useStore(st => st.cloudEmail);
+
+  const CLOUD_STATUS_LABEL: Record<typeof cloudStatus, string> = {
+    disabled: 'Not set up', 'signed-out': 'Signed out', connecting: 'Connecting…', synced: 'Synced', error: 'Sync error',
+  };
+  const CLOUD_STATUS_COLOR: Record<typeof cloudStatus, string> = {
+    disabled: 'var(--text-lo)', 'signed-out': '#fbbf24', connecting: '#fbbf24', synced: '#4ade80', error: '#fda4af',
+  };
 
   const requestVersionHistory = () => {
     if (settings.adminPassword) { setShowVersionPin(true); return; }
@@ -212,6 +223,24 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           )}
         </Section>
 
+        <Section title="☁️ CLOUD SYNC">
+          <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-lo)' }}>
+            Sign in on all your devices with the same account to keep trips and the Master Library in sync automatically, in real time.
+          </p>
+          <div className={s.row} style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <span className={s.row} style={{ gap: 8 }}>
+              {cloudStatus === 'disabled' ? <CloudOff size={16} color="var(--text-lo)" /> : <Cloud size={16} color={CLOUD_STATUS_COLOR[cloudStatus]} />}
+              <span style={{ fontSize: 13.5 }}>
+                <b style={{ color: CLOUD_STATUS_COLOR[cloudStatus] }}>{CLOUD_STATUS_LABEL[cloudStatus]}</b>
+                {cloudEmail && <span style={{ color: 'var(--text-lo)' }}> · {cloudEmail}</span>}
+              </span>
+            </span>
+            <button className={s.btnPrimary} onClick={() => setShowCloudWizard(true)}>
+              {cloudStatus === 'disabled' ? 'Set Up Cloud Sync' : 'Manage'}
+            </button>
+          </div>
+        </Section>
+
         <Section title="💾 BACKUP">
           <div className={s.row} style={{ flexWrap: 'wrap' }}>
             <button className={s.btnGhost} onClick={handleExport}><Download size={16} /> Export Backup</button>
@@ -257,6 +286,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         />
       )}
       {showVersionHistory && <VersionHistoryModal onClose={() => setShowVersionHistory(false)} />}
+      {showCloudWizard && <CloudSyncWizard onClose={() => setShowCloudWizard(false)} />}
     </div>
   );
 }

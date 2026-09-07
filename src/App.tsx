@@ -2,6 +2,7 @@ import { useEffect, type CSSProperties } from 'react';
 import { useStore } from './store/useStore';
 import PackingPage from './pages/PackingPage';
 import { applyAppearance, FONT_SIZE_SCALE } from './lib/appearance';
+import { startCloudSync } from './lib/useCloudSync';
 
 export default function App() {
   const ready = useStore(s => s.ready);
@@ -9,6 +10,7 @@ export default function App() {
   const settings = useStore(s => s.settings);
 
   useEffect(() => { init(); }, [init]);
+  useEffect(() => { startCloudSync(); }, []);
   useEffect(() => { applyAppearance(settings); }, [settings.fontFamily, settings.textColor, settings.accentColor, settings.themeMode]);
 
   if (!ready) {
