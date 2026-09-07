@@ -140,6 +140,7 @@ const FILTERS: { id: ViewFilter; label: string }[] = [
   { id: 'packLater', label: 'Pack Later' },
   { id: 'charging', label: 'Charging' },
   { id: 'gifts', label: 'Gifts' },
+  { id: 'favourites', label: '⭐ Favourites' },
 ];
 
 const EMPTY_TRIP_DRAFT = {

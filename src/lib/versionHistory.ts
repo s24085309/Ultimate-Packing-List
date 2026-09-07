@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.46';
+export const APP_VERSION = '6.9.47';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -342,6 +342,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-07',
     category: 'New Feature',
     description: 'Trip setup now has an optional Departure Time field. When set, a "🔋 Charge your devices" reminder fires 3 hours before departure (while the app is open), listing anything still on the charge tracker that isn\'t charged yet.',
+  },
+  {
+    version: '6.9.47',
+    date: '2026-09-07',
+    category: 'New Feature',
+    description: 'Added a "⭐ Favourites" filter next to Not Packed / Pack Later / Charging / Gifts — tap the star on any item to flag it as a must-pack, then use this filter to see only your starred items and make sure every one of them is packed.',
   },
 ];
 
