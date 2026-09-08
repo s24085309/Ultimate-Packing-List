@@ -87,6 +87,18 @@ export interface ExportModel {
   viewFilter: ViewFilter;
 }
 
+// Within a group, unpacked items come first (so there's less to scroll past
+// while you're still packing), packed items sink to the bottom. Alphabetical
+// order within each half naturally clusters similar items together — e.g.
+// every "Shoes …" or "T-Shirt …" ends up side by side, making it easier to
+// pack like with like — without needing a fragile category guesser.
+function sortGroupItems(items: PackingItem[]): PackingItem[] {
+  return [...items].sort((a, b) => {
+    if (a.packed !== b.packed) return a.packed ? 1 : -1;
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  });
+}
+
 function groupBy(items: PackingItem[]): GroupedItems[] {
   const map = new Map<string, PackingItem[]>();
   for (const item of items) {
@@ -94,7 +106,7 @@ function groupBy(items: PackingItem[]): GroupedItems[] {
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(item);
   }
-  return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items })));
+  return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items: sortGroupItems(items) })));
 }
 
 export function tripDays(trip: Trip): number {

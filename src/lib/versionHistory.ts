@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.59';
+export const APP_VERSION = '6.9.60';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -420,6 +420,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-08',
     category: 'Bug Fix',
     description: 'Fixed the Quantity field snapping back to 1 the instant you deleted it, making it impossible to backspace and type a new number (e.g. deleting "1" to type "2"). You can now clear it and type freely — it only falls back to 1 if left empty.',
+  },
+  {
+    version: '6.9.60',
+    date: '2026-09-08',
+    category: 'UI / Design Change',
+    description: 'Items within a group now sort automatically: packed items sink to the bottom, and everything else is alphabetical — so items with similar names (e.g. every "Shoes …" or "T-Shirt …") end up bunched together, making it much easier to pack like with like. Applies to the packing view and every export.',
   },
 ];
 
