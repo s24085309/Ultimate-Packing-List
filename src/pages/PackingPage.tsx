@@ -109,6 +109,11 @@ function TrackerGroupSection({ title, items, checkedField, onToggle }: {
   const [collapsed, setCollapsed] = useState(false);
   const color = groupColor(title);
   const checkedCount = items.filter(i => i[checkedField]).length;
+  // Checked items sink to the bottom; alphabetical order otherwise clusters similar items together.
+  const sortedItems = useMemo(() => [...items].sort((a, b) => {
+    if (a[checkedField] !== b[checkedField]) return a[checkedField] ? 1 : -1;
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  }), [items, checkedField]);
 
   return (
     <div className="packingGroupCard">
@@ -118,17 +123,17 @@ function TrackerGroupSection({ title, items, checkedField, onToggle }: {
       />
       {!collapsed && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-          {items.map(i => (
+          {sortedItems.map(i => (
             <div
-              key={i.id} className={s.touchRow}
+              key={i.id} className={s.touchRowCompact}
               style={{ background: `${color}22`, border: `1px solid ${color}`, boxShadow: `0 0 8px 0 ${color}66` }}
             >
-              <button className={`${s.checkCircle} ${i[checkedField] ? s.done : ''}`} onClick={() => onToggle(i.id)}>
-                {i[checkedField] && <span style={{ color: 'white', fontSize: 14 }}>✓</span>}
+              <button className={`${s.checkCircleCompact} ${i[checkedField] ? s.done : ''}`} onClick={() => onToggle(i.id)}>
+                {i[checkedField] && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
               </button>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600 }}>{i.name}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-lo)' }}>{i.group}</div>
+                <div className={i[checkedField] ? s.strike : ''} style={{ fontWeight: 600 }}>{i.name}</div>
+                <div className={i[checkedField] ? s.strike : ''} style={{ fontSize: 11.5, color: 'var(--text-lo)' }}>{i.group}</div>
               </div>
             </div>
           ))}
@@ -776,11 +781,11 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
   const color = groupColor(item.group);
   return (
     <div
-      className={s.touchRow}
+      className={s.touchRowCompact}
       style={{ alignItems: 'flex-start', background: `${color}22`, border: `1px solid ${color}`, boxShadow: `0 0 8px 0 ${color}66` }}
     >
-      <button className={`${s.checkCircle} ${item.packed ? s.done : ''}`} onClick={() => togglePacked(item.id)}>
-        {item.packed && <span style={{ color: 'white', fontSize: 14 }}>✓</span>}
+      <button className={`${s.checkCircleCompact} ${item.packed ? s.done : ''}`} onClick={() => togglePacked(item.id)}>
+        {item.packed && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
       </button>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className={item.packed ? s.strike : ''} style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>

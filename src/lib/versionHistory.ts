@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.60';
+export const APP_VERSION = '6.9.61';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -426,6 +426,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-08',
     category: 'UI / Design Change',
     description: 'Items within a group now sort automatically: packed items sink to the bottom, and everything else is alphabetical — so items with similar names (e.g. every "Shoes …" or "T-Shirt …") end up bunched together, making it much easier to pack like with like. Applies to the packing view and every export.',
+  },
+  {
+    version: '6.9.61',
+    date: '2026-09-08',
+    category: 'UI / Design Change',
+    description: 'The ⚡️Charge and 🔌Cable trackers now also strikethrough a ticked item and sink it to the bottom, matching the packing groups. Also shrank every packing item row by about a third (with a smaller tick circle) so more of the list fits on screen.',
   },
 ];
 

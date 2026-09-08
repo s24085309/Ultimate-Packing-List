@@ -67,6 +67,34 @@
   border-color: transparent;
 }
 
+/* Packing list item rows (packing groups + charge/cable trackers) — about a
+   third shorter than the standard .touchRow so more of the list fits on
+   screen while packing; the check circle shrinks to match. */
+.touchRowCompact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 37px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+.touchRowCompact:active { transform: scale(0.98); background: rgba(255,255,255,0.08); }
+
+.checkCircleCompact {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--text-lo);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition-fast);
+}
+.checkCircleCompact.done {
+  background: var(--grad-a);
+  border-color: transparent;
+}
+
 .strike { text-decoration: line-through; color: var(--text-lo); opacity: 0.75; }
 
 .btnPrimary {
