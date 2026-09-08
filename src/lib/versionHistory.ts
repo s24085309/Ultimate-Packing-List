@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.58';
+export const APP_VERSION = '6.9.59';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -414,6 +414,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-08',
     category: 'Bug Fix',
     description: 'Fixed being unable to change an item\'s quantity (e.g. underwear) when it had a "per day" amount set — the Quantity field was locked in that case. Now typing a new quantity directly always works, and clears the per-day amount so your typed number sticks.',
+  },
+  {
+    version: '6.9.59',
+    date: '2026-09-08',
+    category: 'Bug Fix',
+    description: 'Fixed the Quantity field snapping back to 1 the instant you deleted it, making it impossible to backspace and type a new number (e.g. deleting "1" to type "2"). You can now clear it and type freely — it only falls back to 1 if left empty.',
   },
 ];
 

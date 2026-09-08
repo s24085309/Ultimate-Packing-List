@@ -752,8 +752,8 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, width: '100%' }}>
           <GroupPicker value={group} groups={groups.includes(group) ? groups : [...groups, group].filter(Boolean)} onChange={setGroup} />
           <input
-            type="number" min={1} className={s.input} value={qty}
-            onChange={e => { setQty(Number(e.target.value) || 1); setQtyPerDay(0); }}
+            type="number" min={1} className={s.input} value={qty || ''}
+            onChange={e => { const v = e.target.value; setQty(v === '' ? 0 : Math.max(0, Number(v) || 0)); setQtyPerDay(0); }}
           />
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-lo)', width: '100%' }}>
@@ -871,8 +871,8 @@ function AddItemModal({ tripId, groups, days, onClose }: { tripId: string; group
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
           <GroupPicker value={group} groups={groups} onChange={setGroup} />
           <input
-            type="number" min={1} className={s.input} value={qty}
-            onChange={e => { setQty(Number(e.target.value) || 1); setQtyPerDay(0); }}
+            type="number" min={1} className={s.input} value={qty || ''}
+            onChange={e => { const v = e.target.value; setQty(v === '' ? 0 : Math.max(0, Number(v) || 0)); setQtyPerDay(0); }}
           />
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-lo)' }}>
