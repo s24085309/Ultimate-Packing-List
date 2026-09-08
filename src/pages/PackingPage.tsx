@@ -751,7 +751,10 @@ function ItemRow({ item, groups, days }: { item: PackingItem; groups: string[]; 
         <input className={s.input} style={{ width: '100%' }} value={name} onChange={e => setName(e.target.value)} autoFocus />
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, width: '100%' }}>
           <GroupPicker value={group} groups={groups.includes(group) ? groups : [...groups, group].filter(Boolean)} onChange={setGroup} />
-          <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} disabled={qtyPerDay > 0} />
+          <input
+            type="number" min={1} className={s.input} value={qty}
+            onChange={e => { setQty(Number(e.target.value) || 1); setQtyPerDay(0); }}
+          />
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-lo)', width: '100%' }}>
           Or per day (× {days} day{days === 1 ? '' : 's'} = {qtyPerDay > 0 ? qtyPerDay * days : '—'}):
@@ -867,7 +870,10 @@ function AddItemModal({ tripId, groups, days, onClose }: { tripId: string; group
         />
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
           <GroupPicker value={group} groups={groups} onChange={setGroup} />
-          <input type="number" min={1} className={s.input} value={qty} onChange={e => setQty(Number(e.target.value) || 1)} disabled={qtyPerDay > 0} />
+          <input
+            type="number" min={1} className={s.input} value={qty}
+            onChange={e => { setQty(Number(e.target.value) || 1); setQtyPerDay(0); }}
+          />
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-lo)' }}>
           Or per day (× {days} day{days === 1 ? '' : 's'} = {qtyPerDay > 0 ? qtyPerDay * days : '—'}):
