@@ -11,7 +11,7 @@ import SettingsModal from '../components/SettingsModal';
 import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
 import DatePicker from '../components/DatePicker';
 import GroupPicker from '../components/GroupPicker';
-import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, effectiveQty, departureCountdown, sortGroupsCanonical, sortMasterItems, type ViewFilter } from '../lib/packingExport';
+import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, effectiveQty, departureCountdown, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
 import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity } from '../types';
@@ -26,6 +26,12 @@ function groupColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
   return GROUP_COLORS[hash % GROUP_COLORS.length];
+}
+
+// Strips a leading emoji (and any other non-letter/non-digit lead-in, like
+// the space after it) so group names such as "🧼 Hygiene" sort as "Hygiene".
+function stripEmojiPrefix(name: string): string {
+  return name.replace(/^[^\p{L}\p{N}]+/u, '').trim();
 }
 
 function GroupHeader({ group, count, packed, collapsed, onToggle, onRename, extra, complete }: {
@@ -1077,7 +1083,9 @@ function MasterArchiveModal({ onClose }: { onClose: () => void }) {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
-    return sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items: sortMasterItems(items) })))
+    return Array.from(map.entries())
+      .map(([group, items]) => ({ group, items: sortMasterItems(items) }))
+      .sort((a, b) => stripEmojiPrefix(a.group).localeCompare(stripEmojiPrefix(b.group), undefined, { sensitivity: 'base' }))
       .map(({ group, items }) => [group, items] as const);
   }, [archived]);
 
@@ -1152,12 +1160,14 @@ function MasterLibraryModal({ onClose }: { onClose: () => void }) {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
-    const canonical = sortGroupsCanonical(Array.from(map.entries()).map(([group, items]) => ({ group, items: sortMasterItems(items) })));
+    const alphabetical = Array.from(map.entries())
+      .map(([group, items]) => ({ group, items: sortMasterItems(items) }))
+      .sort((a, b) => stripEmojiPrefix(a.group).localeCompare(stripEmojiPrefix(b.group), undefined, { sensitivity: 'base' }));
     // Groups the user has manually reordered come first, in that order;
-    // any group not yet in that list falls back to canonical order after them.
-    const known = canonical.filter(({ group }) => groupOrder.includes(group))
+    // any group not yet in that list falls back to alphabetical order after them.
+    const known = alphabetical.filter(({ group }) => groupOrder.includes(group))
       .sort((a, b) => groupOrder.indexOf(a.group) - groupOrder.indexOf(b.group));
-    const rest = canonical.filter(({ group }) => !groupOrder.includes(group));
+    const rest = alphabetical.filter(({ group }) => !groupOrder.includes(group));
     return [...known, ...rest].map(({ group, items }) => [group, items] as const);
   }, [activeItems, groupOrder]);
 

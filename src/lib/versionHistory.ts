@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.61';
+export const APP_VERSION = '6.9.62';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -432,6 +432,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-08',
     category: 'UI / Design Change',
     description: 'The ⚡️Charge and 🔌Cable trackers now also strikethrough a ticked item and sink it to the bottom, matching the packing groups. Also shrank every packing item row by about a third (with a smaller tick circle) so more of the list fits on screen.',
+  },
+  {
+    version: '6.9.62',
+    date: '2026-09-09',
+    category: 'UI / Design Change',
+    description: 'Master Packing Library groups are now sorted alphabetically by their first letter, ignoring the leading emoji (so "🧑‍💻 Technology" sorts under T, not the emoji). Manually reordered groups still keep their custom position.',
   },
 ];
 
