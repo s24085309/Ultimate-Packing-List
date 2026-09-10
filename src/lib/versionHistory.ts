@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.64';
+export const APP_VERSION = '6.9.65';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -450,6 +450,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-10',
     category: 'UI / Design Change',
     description: 'The ⚡️Charge and 🔌Cable trackers now also hide a ticked item by default, with their own 👁 eye icon on the heading to reveal it again — matching the same behaviour as the packing groups.',
+  },
+  {
+    version: '6.9.65',
+    date: '2026-09-10',
+    category: 'Bug Fix',
+    description: 'Fixed groups jumping around the packing screen every time you ticked an item off — they no longer reorder by how many items are left to pack. Groups now stay in the same order as the Master Library everywhere (trip view, PDF/Word/Excel/print), instead of the old fixed category list.',
   },
 ];
 

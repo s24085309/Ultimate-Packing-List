@@ -1,4 +1,5 @@
 import type { Trip, PackingItem, DepartureTask, MasterPackingItem } from '../types';
+import { useStore } from '../store/useStore';
 
 export function conditionEmoji(conditions: string | undefined): string {
   const c = (conditions ?? '').toLowerCase();
@@ -45,20 +46,26 @@ export interface GroupedItems {
   items: PackingItem[];
 }
 
-// The category order from the original packing spreadsheet. Groups are kept in this
-// order everywhere (trip view, PDF/Word/Excel/HTML export, Master Library) instead of
-// being re-alphabetized — any group not in this list keeps its natural first-seen order.
-export const CANONICAL_GROUP_ORDER = [
-  '🧼 Hygiene', '👖 Clothes', '🛝 Basics', '🏫 School', '📝 Pre-Trip Prep',
-  '✈️ Travelling Docs', '🧑‍💻 Technology', '🎁 Gifts',
-];
+// Strips a leading emoji (and any other non-letter/non-digit lead-in, like
+// the space after it) so group names such as "🧼 Hygiene" sort as "Hygiene".
+export function stripEmojiPrefix(name: string): string {
+  return name.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+}
 
+// Groups everywhere (trip view, PDF/Word/Excel/HTML export, Master Library)
+// keep the same order the Master Library shows: any group the user has
+// manually reordered there (via the up/down arrows) comes first in that
+// order, and every other group falls back to alphabetical by first letter,
+// ignoring a leading emoji. This is deliberately never based on how many
+// items are packed — reordering groups as you tick items off makes the list
+// jump around while you're mid-pack.
 export function sortGroupsCanonical<T extends { group: string }>(groups: T[]): T[] {
-  const rank = new Map(CANONICAL_GROUP_ORDER.map((g, i) => [g, i]));
-  return groups
-    .map((g, i) => ({ g, i, r: rank.has(g.group) ? rank.get(g.group)! : CANONICAL_GROUP_ORDER.length + i }))
-    .sort((a, b) => a.r - b.r)
-    .map(x => x.g);
+  const order = useStore.getState().settings.masterGroupOrder ?? [];
+  const known = groups.filter(g => order.includes(g.group))
+    .sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group));
+  const rest = groups.filter(g => !order.includes(g.group))
+    .sort((a, b) => stripEmojiPrefix(a.group).localeCompare(stripEmojiPrefix(b.group), undefined, { sensitivity: 'base' }));
+  return [...known, ...rest];
 }
 
 // Sorts Master Library items by their manually-set `order` (from drag/reorder controls),

@@ -1388,13 +1388,14 @@ export default function PackingPage() {
   const model = trip ? buildExportModel(trip, items, tasks, DEFAULT_EXPORT_OPTIONS, filter) : null;
   const status = model ? statusLine(model) : null;
 
-  // While packing, groups with the fewest items still to pack float to the
-  // top so you can knock them out first; a fully-packed group (nothing left)
-  // moves out of the main list entirely, into the collapsed "Packed 🥳" bucket below.
+  // Groups stay in the same (Master Library) order at all times — reordering
+  // by how many items are left to pack made the list jump around every time
+  // you ticked something off. A fully-packed group (nothing left) still
+  // moves out of the main list, into the collapsed "Packed 🥳" bucket below.
   const { visibleGroups, packedGroups, totalTripGroups } = useMemo(() => {
     const raw = model?.groups ?? [];
     const withRemaining = raw.map(g => ({ ...g, remaining: g.items.filter(i => !i.packed).length }));
-    const incomplete = withRemaining.filter(g => g.remaining > 0).sort((a, b) => a.remaining - b.remaining);
+    const incomplete = withRemaining.filter(g => g.remaining > 0);
     const complete = withRemaining.filter(g => g.remaining === 0);
     return { visibleGroups: incomplete, packedGroups: complete, totalTripGroups: withRemaining.length };
   }, [model]);
