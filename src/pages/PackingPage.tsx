@@ -12,7 +12,7 @@ import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
 import DatePicker from '../components/DatePicker';
 import GroupPicker from '../components/GroupPicker';
 import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, effectiveQty, departureCountdown, sortMasterItems, type ViewFilter } from '../lib/packingExport';
-import { searchCities, fetchForecast, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
+import { searchCities, fetchForecast, refreshTripWeather, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
 import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity } from '../types';
 import s from '../widgets/shared.module.css';
@@ -1381,6 +1381,18 @@ export default function PackingPage() {
   });
 
   const trip = trips.find(t => t.id === activeTripId) ?? null;
+  // Refresh the active trip's live weather once per app open/refresh — not
+  // on every render or every trip switch — so the forecast is never far out
+  // of date without needing to reopen Edit Trip. Silent on failure: keeps
+  // whatever weather is already stored rather than surfacing an error here.
+  const weatherRefreshedOnLoad = useRef(false);
+  useEffect(() => {
+    if (weatherRefreshedOnLoad.current || !trip) return;
+    weatherRefreshedOnLoad.current = true;
+    refreshTripWeather(trip).then(update => {
+      if (update) updateTrip(trip.id, update);
+    }).catch(() => { /* keep existing weather if the live lookup fails */ });
+  }, [trip, updateTrip]);
   const tripItems = useMemo(() => items.filter(i => i.tripId === trip?.id), [items, trip]);
   const tripTasks = useMemo(() => tasks.filter(t => t.tripId === trip?.id), [tasks, trip]);
   const groups = useMemo(() => Array.from(new Set([...items.map(i => i.group), ...masterItems.map(i => i.group)])).sort(), [items, masterItems]);

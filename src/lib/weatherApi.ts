@@ -1,6 +1,8 @@
 // Free, keyless weather lookup for trips: Open-Meteo geocoding + forecast.
 // https://open-meteo.com/ — no API key required, CORS-enabled for browser use.
 
+import type { Trip, TripCity, WeatherDay } from '../types';
+
 export interface CityResult {
   name: string;
   admin1?: string;
@@ -67,4 +69,87 @@ export async function fetchForecast(lat: number, lon: number, startDate: string,
     low: Math.round(lows[i]),
     conditions: conditionFromWmoCode(codes[i]),
   }));
+}
+
+function dateRangeInclusive(start: string, end: string): string[] {
+  const dates: string[] = [];
+  const d = new Date(start + 'T00:00:00');
+  const endD = new Date(end + 'T00:00:00');
+  while (d <= endD) {
+    dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+}
+
+function dayLabelFor(date: string): string {
+  const d = new Date(date + 'T00:00:00');
+  return `${d.toLocaleDateString(undefined, { weekday: 'short' })} ${d.getDate()}`;
+}
+
+function assignCitiesEvenly(dates: string[], cities: TripCity[]): TripCity[] {
+  if (cities.length === 0) return [];
+  const perCity = Math.ceil(dates.length / cities.length);
+  return dates.map((_, i) => cities[Math.min(cities.length - 1, Math.floor(i / perCity))]);
+}
+
+export interface TripWeatherUpdate {
+  weatherDaily: WeatherDay[];
+  weatherHigh?: number;
+  weatherLow?: number;
+  weatherConditions?: string;
+}
+
+// Re-fetches live weather for a trip's assigned cities/dates — the same
+// lookup the Edit Trip form's refresh button does, just usable without
+// opening it (e.g. on app launch). Honors any per-day city already recorded
+// in weatherDaily (a manual override), otherwise splits days evenly across
+// the trip's cities. Returns null if the trip has no cities/dates set, or
+// if every day of the trip falls outside the forecast horizon.
+export async function refreshTripWeather(trip: Trip): Promise<TripWeatherUpdate | null> {
+  if (!trip.cities?.length || !trip.departureDate || !trip.returnDate) return null;
+  const allDates = dateRangeInclusive(trip.departureDate, trip.returnDate);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const horizonEnd = new Date(today); horizonEnd.setDate(horizonEnd.getDate() + FORECAST_HORIZON_DAYS);
+  const availableDates = allDates.filter(d => {
+    const dt = new Date(d + 'T00:00:00');
+    return dt >= today && dt <= horizonEnd;
+  });
+  if (availableDates.length === 0) return null;
+
+  const existingCityForDate = new Map(
+    (trip.weatherDaily ?? []).filter(d => d.date && d.city).map(d => [d.date as string, d.city as string]),
+  );
+  const evenSplit = assignCitiesEvenly(availableDates, trip.cities);
+  const cityForDate = availableDates.map((date, i) => {
+    const name = existingCityForDate.get(date);
+    return trip.cities!.find(c => c.name === name) ?? evenSplit[i];
+  });
+
+  const uniqueCities = Array.from(new Map(cityForDate.map(c => [c.name, c])).values());
+  const forecastsByCity = new Map<string, ForecastDay[]>();
+  await Promise.all(uniqueCities.map(async city => {
+    const fc = await fetchForecast(city.lat, city.lon, availableDates[0], availableDates[availableDates.length - 1]);
+    forecastsByCity.set(city.name, fc);
+  }));
+
+  const newDaily: WeatherDay[] = availableDates.map((date, i) => {
+    const city = cityForDate[i];
+    const match = forecastsByCity.get(city.name)?.find(f => f.date === date);
+    return { day: dayLabelFor(date), date, high: match?.high, low: match?.low, conditions: match?.conditions, city: city.name };
+  });
+
+  const highs = newDaily.map(d => d.high).filter((n): n is number => n != null);
+  const lows = newDaily.map(d => d.low).filter((n): n is number => n != null);
+  const counts = new Map<string, number>();
+  newDaily.forEach(d => { if (d.conditions) counts.set(d.conditions, (counts.get(d.conditions) ?? 0) + 1); });
+  const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const truncated = availableDates.length < allDates.length;
+
+  return {
+    weatherDaily: newDaily,
+    weatherHigh: highs.length ? Math.max(...highs) : undefined,
+    weatherLow: lows.length ? Math.min(...lows) : undefined,
+    weatherConditions: top ? (truncated ? `${top} (forecast covers the first part of the trip only)` : top) : undefined,
+  };
 }
