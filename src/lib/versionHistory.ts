@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.63';
+export const APP_VERSION = '6.9.64';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -444,6 +444,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-10',
     category: 'UI / Design Change',
     description: 'Ticking an item off now hides it from its group\'s list by default, so you only see what\'s left to pack — tap the 👁 eye icon on a group\'s heading to reveal its packed items again any time. Each group remembers its own show/hide state independently.',
+  },
+  {
+    version: '6.9.64',
+    date: '2026-09-10',
+    category: 'UI / Design Change',
+    description: 'The ⚡️Charge and 🔌Cable trackers now also hide a ticked item by default, with their own 👁 eye icon on the heading to reveal it again — matching the same behaviour as the packing groups.',
   },
 ];
 

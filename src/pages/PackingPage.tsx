@@ -113,6 +113,7 @@ function TrackerGroupSection({ title, items, checkedField, onToggle }: {
   title: string; items: PackingItem[]; checkedField: 'charged' | 'cablePacked'; onToggle: (id: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [showChecked, setShowChecked] = useState(false);
   const color = groupColor(title);
   const checkedCount = items.filter(i => i[checkedField]).length;
   // Checked items sink to the bottom; alphabetical order otherwise clusters similar items together.
@@ -120,16 +121,26 @@ function TrackerGroupSection({ title, items, checkedField, onToggle }: {
     if (a[checkedField] !== b[checkedField]) return a[checkedField] ? 1 : -1;
     return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
   }), [items, checkedField]);
+  const displayItems = showChecked ? sortedItems : sortedItems.filter(i => !i[checkedField]);
 
   return (
     <div className="packingGroupCard">
       <GroupHeader
         group={title} count={items.length} packed={checkedCount}
         collapsed={collapsed} onToggle={() => setCollapsed(c => !c)}
+        extra={checkedCount > 0 && (
+          <button
+            onClick={() => setShowChecked(v => !v)}
+            title={showChecked ? 'Hide ticked items' : 'Show ticked items'}
+            style={{ background: 'none', border: 'none', color: 'var(--text-lo)', padding: 4 }}
+          >
+            {showChecked ? <Eye size={15} /> : <EyeOff size={15} />}
+          </button>
+        )}
       />
       {!collapsed && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-          {sortedItems.map(i => (
+          {displayItems.map(i => (
             <div
               key={i.id} className={s.touchRowCompact}
               style={{ background: `${color}22`, border: `1px solid ${color}`, boxShadow: `0 0 8px 0 ${color}66` }}
