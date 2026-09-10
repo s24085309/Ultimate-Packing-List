@@ -1359,6 +1359,15 @@ export default function PackingPage() {
     if (next.has(g)) next.delete(g); else next.add(g);
     return next;
   });
+  // Packed items hide from a group's list by default — tap the eye on that
+  // group's heading to reveal them again (per group, so packing one item
+  // doesn't shrink every other group's view too).
+  const [showPackedGroups, setShowPackedGroups] = useState<Set<string>>(new Set());
+  const togglePackedVisible = (g: string) => setShowPackedGroups(prev => {
+    const next = new Set(prev);
+    if (next.has(g)) next.delete(g); else next.add(g);
+    return next;
+  });
 
   const trip = trips.find(t => t.id === activeTripId) ?? null;
   const tripItems = useMemo(() => items.filter(i => i.tripId === trip?.id), [items, trip]);
@@ -1579,21 +1588,35 @@ export default function PackingPage() {
                 <div style={{ fontSize: 13.5 }}>Nothing here yet.</div>
               </div>
             )}
-            {visibleGroups.map(g => (
+            {visibleGroups.map(g => {
+              const packedCount = g.items.length - g.remaining;
+              const showPacked = showPackedGroups.has(g.group);
+              const displayItems = showPacked ? g.items : g.items.filter(item => !item.packed);
+              return (
               <div key={g.group} className="packingGroupCard">
                 <GroupHeader
-                  group={g.group} count={g.items.length} packed={g.items.length - g.remaining}
+                  group={g.group} count={g.items.length} packed={packedCount}
                   collapsed={collapsedGroups.has(g.group)}
                   onToggle={() => toggleGroupCollapsed(g.group)}
                   onRename={newName => renameGroup(g.group, newName)}
+                  extra={packedCount > 0 && (
+                    <button
+                      onClick={() => togglePackedVisible(g.group)}
+                      title={showPacked ? 'Hide packed items' : 'Show packed items'}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-lo)', padding: 4 }}
+                    >
+                      {showPacked ? <Eye size={15} /> : <EyeOff size={15} />}
+                    </button>
+                  )}
                 />
                 {!collapsedGroups.has(g.group) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                    {g.items.map(item => <ItemRow key={item.id} item={item} groups={groups} days={tripDays(trip)} />)}
+                    {displayItems.map(item => <ItemRow key={item.id} item={item} groups={groups} days={tripDays(trip)} />)}
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
             {packedGroups.length > 0 && (
               <div className="packingGroupCard" style={{ gridColumn: '1 / -1' }}>
                 <div

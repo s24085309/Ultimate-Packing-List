@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.62';
+export const APP_VERSION = '6.9.63';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -438,6 +438,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-09',
     category: 'UI / Design Change',
     description: 'Master Packing Library groups are now sorted alphabetically by their first letter, ignoring the leading emoji (so "🧑‍💻 Technology" sorts under T, not the emoji). Manually reordered groups still keep their custom position.',
+  },
+  {
+    version: '6.9.63',
+    date: '2026-09-10',
+    category: 'UI / Design Change',
+    description: 'Ticking an item off now hides it from its group\'s list by default, so you only see what\'s left to pack — tap the 👁 eye icon on a group\'s heading to reveal its packed items again any time. Each group remembers its own show/hide state independently.',
   },
 ];
 
