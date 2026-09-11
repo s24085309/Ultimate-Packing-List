@@ -1583,9 +1583,10 @@ export default function PackingPage() {
                   background: model!.ready ? 'rgba(34,197,94,0.15)' : 'rgba(249,115,22,0.15)', color: model!.ready ? '#4ade80' : '#fb923c',
                 }}>
                   {status.emoji} {status.text}
-                  {!model!.ready && (
-                    <span style={{ fontWeight: 600 }}> — {model!.totalItems - model!.packedItems} item{model!.totalItems - model!.packedItems === 1 ? '' : 's'} left to pack</span>
-                  )}
+                  {!model!.ready && (() => {
+                    const grandRemaining = (model!.totalItems - model!.packedItems) + tripTasks.filter(t => !t.done).length;
+                    return <span style={{ fontWeight: 600 }}> — {grandRemaining} left to finish</span>;
+                  })()}
                 </div>
               )}
             </div>
