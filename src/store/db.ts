@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Trip, PackingItem, MasterPackingItem, DepartureTask, AppSettings } from '../types';
+import type { Trip, PackingItem, MasterPackingItem, DepartureTask, MasterDepartureTask, AppSettings } from '../types';
 
 // Stores browser file-system handles (e.g. the chosen auto-backup folder) —
 // these are structured-clonable and IndexedDB explicitly supports persisting
@@ -15,6 +15,7 @@ export class PackingDB extends Dexie {
   packingItems!: Table<PackingItem, string>;
   masterPackingItems!: Table<MasterPackingItem, string>;
   departureTasks!: Table<DepartureTask, string>;
+  masterDepartureTasks!: Table<MasterDepartureTask, string>;
   settings!: Table<AppSettings, string>;
   handles!: Table<StoredHandle, string>;
 
@@ -38,6 +39,15 @@ export class PackingDB extends Dexie {
       packingItems: 'id, tripId, group, packed, packLater, requiresCharging, isGift',
       masterPackingItems: 'id, group',
       departureTasks: 'id, tripId, done',
+      settings: 'id',
+      handles: 'id',
+    });
+    this.version(4).stores({
+      trips: 'id, createdAt',
+      packingItems: 'id, tripId, group, packed, packLater, requiresCharging, isGift',
+      masterPackingItems: 'id, group',
+      departureTasks: 'id, tripId, done',
+      masterDepartureTasks: 'id',
       settings: 'id',
       handles: 'id',
     });

@@ -1350,6 +1350,10 @@ export default function PackingPage() {
   const addDepartureTask = useStore(st => st.addDepartureTask);
   const toggleDepartureTask = useStore(st => st.toggleDepartureTask);
   const removeDepartureTask = useStore(st => st.removeDepartureTask);
+  const masterDepartureTasks = useStore(st => st.masterDepartureTasks);
+  const ensureMasterDepartureTask = useStore(st => st.ensureMasterDepartureTask);
+  const addMasterDepartureTaskToTrip = useStore(st => st.addMasterDepartureTaskToTrip);
+  const removeMasterDepartureTask = useStore(st => st.removeMasterDepartureTask);
   const renameGroup = useStore(st => st.renameGroup);
   const toggleCharged = useStore(st => st.togglePackingItemCharged);
   const toggleCablePacked = useStore(st => st.togglePackingItemCablePacked);
@@ -1364,6 +1368,9 @@ export default function PackingPage() {
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [taskText, setTaskText] = useState('');
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [tasksCollapsed, setTasksCollapsed] = useState(false);
+  const [showDoneTasks, setShowDoneTasks] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const toggleGroupCollapsed = (g: string) => setCollapsedGroups(prev => {
     const next = new Set(prev);
@@ -1701,30 +1708,93 @@ export default function PackingPage() {
             )}
           </div>
 
-          {filter === 'all' && (
+          {filter === 'all' && (() => {
+            const doneCount = tripTasks.filter(t => t.done).length;
+            const remainingCount = tripTasks.length - doneCount;
+            const displayTasks = showDoneTasks ? tripTasks : tripTasks.filter(t => !t.done);
+            const unusedTemplates = masterDepartureTasks.filter(
+              mt => !tripTasks.some(t => t.text.trim().toLowerCase() === mt.text.trim().toLowerCase()),
+            );
+            const addTask = () => {
+              if (!taskText.trim()) return;
+              addDepartureTask(trip.id, taskText.trim());
+              ensureMasterDepartureTask(taskText.trim());
+              setTaskText('');
+            };
+            return (
             <div className="glass" style={{ padding: 18 }}>
-              <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 10 }}>✈️ Departure Tasks</div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                <input className={s.input} placeholder="e.g. Print boarding passes" value={taskText}
-                  onChange={e => setTaskText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && taskText.trim()) { addDepartureTask(trip.id, taskText.trim()); setTaskText(''); } }} />
-                <button className={s.btnPrimary} style={{ width: 52, padding: 0, flexShrink: 0 }}
-                  onClick={() => { if (taskText.trim()) { addDepartureTask(trip.id, taskText.trim()); setTaskText(''); } }}><Plus size={20} /></button>
+              <div
+                role="button" tabIndex={0}
+                onClick={() => setTasksCollapsed(c => !c)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setTasksCollapsed(c => !c); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, width: '100%', background: 'none', border: 'none',
+                  padding: '4px 0', marginBottom: tasksCollapsed ? 0 : 10, textAlign: 'left', cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontWeight: 800, fontSize: 15, flex: 1, minWidth: 0 }}>
+                  ✈️ Departure Tasks{' '}
+                  {tripTasks.length > 0 && (
+                    <span style={{ opacity: 0.65, fontWeight: 600, fontSize: 13 }}>
+                      ({doneCount} / {tripTasks.length}) — {remainingCount > 0 ? `${remainingCount} left` : 'all done!'}
+                    </span>
+                  )}
+                </span>
+                {doneCount > 0 && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setShowDoneTasks(v => !v); }}
+                    title={showDoneTasks ? 'Hide done tasks' : 'Show done tasks'}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-lo)', padding: 2, flexShrink: 0 }}
+                  >
+                    {showDoneTasks ? <Eye size={15} /> : <EyeOff size={15} />}
+                  </button>
+                )}
+                <ChevronDown size={15} color="var(--text-lo)" style={{ transform: tasksCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform var(--transition-fast)' }} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {tripTasks.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>No departure tasks yet.</div>}
-                {tripTasks.map(t => (
-                  <div key={t.id} className={s.touchRow}>
-                    <button className={`${s.checkCircle} ${t.done ? s.done : ''}`} onClick={() => toggleDepartureTask(t.id)}>
-                      {t.done && <span style={{ color: 'white', fontSize: 14 }}>✓</span>}
-                    </button>
-                    <div style={{ flex: 1 }} className={t.done ? s.strike : ''}>{t.text}</div>
-                    <button onClick={() => removeDepartureTask(t.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
+              {!tasksCollapsed && (
+                <>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                    <input className={s.input} placeholder="e.g. Print boarding passes" value={taskText}
+                      onChange={e => setTaskText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') addTask(); }} />
+                    <button className={s.btnPrimary} style={{ width: 52, padding: 0, flexShrink: 0 }} onClick={addTask}><Plus size={20} /></button>
+                    {masterDepartureTasks.length > 0 && (
+                      <button
+                        className={s.btnGhost} style={{ width: 44, padding: 0, flexShrink: 0, color: showTemplates ? '#a855f7' : undefined }}
+                        title="Add from saved tasks" onClick={() => setShowTemplates(v => !v)}
+                      ><Library size={16} /></button>
+                    )}
                   </div>
-                ))}
-              </div>
+                  {showTemplates && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-lo)' }}>SAVED TASKS — tap + to add to this trip</div>
+                      {unusedTemplates.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--text-lo)' }}>Nothing saved yet — tasks you add are saved automatically for future trips.</div>}
+                      {unusedTemplates.map(mt => (
+                        <div key={mt.id} className={s.touchRowCompact} style={{ background: 'rgba(255,255,255,0.04)' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>{mt.text}</div>
+                          <button onClick={() => addMasterDepartureTaskToTrip(mt.id, trip.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Plus size={16} /></button>
+                          <button onClick={() => removeMasterDepartureTask(mt.id)} title="Remove from saved tasks" style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={14} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {tripTasks.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-lo)' }}>No departure tasks yet.</div>}
+                    {displayTasks.map(t => (
+                      <div key={t.id} className={s.touchRowCompact}>
+                        <button className={`${s.checkCircleCompact} ${t.done ? s.done : ''}`} onClick={() => toggleDepartureTask(t.id)}>
+                          {t.done && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
+                        </button>
+                        <div style={{ flex: 1 }} className={t.done ? s.strike : ''}>{t.text}</div>
+                        <button onClick={() => removeDepartureTask(t.id)} style={{ background: 'none', border: 'none', color: 'var(--text-lo)' }}><Trash2 size={16} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-          )}
+            );
+          })()}
         </div>
       )}
 

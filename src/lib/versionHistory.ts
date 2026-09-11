@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.68';
+export const APP_VERSION = '6.9.69';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -474,6 +474,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-11',
     category: 'UI / Design Change',
     description: 'The Packing Progress status message now shrinks its font size to fit on one line, however many items are left to pack, instead of wrapping onto a second line.',
+  },
+  {
+    version: '6.9.69',
+    date: '2026-09-11',
+    category: 'New Feature',
+    description: 'Departure Tasks are now saved for future trips — any task you add is automatically remembered, and a new 📋 button lets you quick-add saved tasks to a new trip instead of retyping "Passports", "Chargers", etc. every time. The Departure Tasks section also now behaves like a normal packing group: tap the heading to collapse/expand it, done tasks hide by default, and a 👁 eye icon reveals them again.',
   },
 ];
 

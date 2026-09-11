@@ -81,6 +81,15 @@ export interface DepartureTask {
   done: boolean;
 }
 
+// A reusable departure-task template — saved once, then quick-added to any
+// future trip's own Departure Tasks list instead of retyping "Passports",
+// "Chargers", etc. every time.
+export interface MasterDepartureTask {
+  id: string;
+  text: string;
+  order?: number;
+}
+
 export type ThemeMode = 'dark' | 'light';
 export type FontFamilyId = 'default' | 'rounded' | 'serif' | 'mono';
 export type FontSizeId = 'small' | 'medium' | 'large' | 'xlarge';

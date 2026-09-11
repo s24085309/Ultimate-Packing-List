@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { db } from './db';
 import { seedDemoData } from './demoData';
-import type { Trip, PackingItem, MasterPackingItem, DepartureTask, AppSettings } from '../types';
+import type { Trip, PackingItem, MasterPackingItem, DepartureTask, MasterDepartureTask, AppSettings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import { sortMasterItems } from '../lib/packingExport';
 
@@ -15,6 +15,7 @@ interface Store {
   packingItems: PackingItem[];
   masterPackingItems: MasterPackingItem[];
   departureTasks: DepartureTask[];
+  masterDepartureTasks: MasterDepartureTask[];
   settings: AppSettings;
   activeTripId: string | null;
   setActiveTripId: (id: string | null) => void;
@@ -59,6 +60,10 @@ interface Store {
   toggleDepartureTask: (id: string) => void;
   removeDepartureTask: (id: string) => void;
 
+  ensureMasterDepartureTask: (text: string) => void;
+  removeMasterDepartureTask: (id: string) => void;
+  addMasterDepartureTaskToTrip: (masterId: string, tripId: string) => void;
+
   exportBackup: () => Promise<string>;
   importBackup: (json: string) => Promise<void>;
   importMasterLibrary: (items: Omit<MasterPackingItem, 'id'>[]) => Promise<void>;
@@ -71,6 +76,7 @@ export const useStore = create<Store>((set, get) => ({
   packingItems: [],
   masterPackingItems: [],
   departureTasks: [],
+  masterDepartureTasks: [],
   settings: DEFAULT_SETTINGS,
   activeTripId: null,
   setActiveTripId: (id) => set({ activeTripId: id }),
@@ -91,15 +97,15 @@ export const useStore = create<Store>((set, get) => ({
 
   init: async () => {
     await seedDemoData();
-    const [trips, packingItems, masterPackingItems, departureTasks, storedSettings] = await Promise.all([
+    const [trips, packingItems, masterPackingItems, departureTasks, masterDepartureTasks, storedSettings] = await Promise.all([
       db.trips.toArray(), db.packingItems.toArray(), db.masterPackingItems.toArray(), db.departureTasks.toArray(),
-      db.settings.get('settings'),
+      db.masterDepartureTasks.toArray(), db.settings.get('settings'),
     ]);
     const sortedTrips = trips.sort((a, b) => a.departureDate.localeCompare(b.departureDate));
     const settings = storedSettings ? { ...DEFAULT_SETTINGS, ...storedSettings } : DEFAULT_SETTINGS;
     if (!storedSettings) db.settings.put(settings);
     set({
-      trips: sortedTrips, packingItems, masterPackingItems, departureTasks, settings,
+      trips: sortedTrips, packingItems, masterPackingItems, departureTasks, masterDepartureTasks, settings,
       activeTripId: sortedTrips[0]?.id ?? null,
       ready: true,
     });
@@ -319,26 +325,49 @@ export const useStore = create<Store>((set, get) => ({
     set({ departureTasks: get().departureTasks.filter(x => x.id !== id) });
   },
 
+  ensureMasterDepartureTask: (text) => {
+    const trimmed = text.trim();
+    const exists = get().masterDepartureTasks.some(t => t.text.trim().toLowerCase() === trimmed.toLowerCase());
+    if (exists) return;
+    const task: MasterDepartureTask = { id: uid(), text: trimmed };
+    db.masterDepartureTasks.put(task);
+    set({ masterDepartureTasks: [...get().masterDepartureTasks, task] });
+  },
+  removeMasterDepartureTask: (id) => {
+    db.masterDepartureTasks.delete(id);
+    set({ masterDepartureTasks: get().masterDepartureTasks.filter(t => t.id !== id) });
+  },
+  addMasterDepartureTaskToTrip: (masterId, tripId) => {
+    const master = get().masterDepartureTasks.find(t => t.id === masterId);
+    if (!master) return;
+    const alreadyOnTrip = get().departureTasks.some(
+      t => t.tripId === tripId && t.text.trim().toLowerCase() === master.text.trim().toLowerCase(),
+    );
+    if (alreadyOnTrip) return;
+    get().addDepartureTask(tripId, master.text);
+  },
+
   exportBackup: async () => {
-    const [trips, packingItems, masterPackingItems, departureTasks, settings] = await Promise.all([
+    const [trips, packingItems, masterPackingItems, departureTasks, masterDepartureTasks, settings] = await Promise.all([
       db.trips.toArray(), db.packingItems.toArray(), db.masterPackingItems.toArray(), db.departureTasks.toArray(),
-      db.settings.get('settings'),
+      db.masterDepartureTasks.toArray(), db.settings.get('settings'),
     ]);
     return JSON.stringify({
       version: 2, exportedAt: new Date().toISOString(),
-      trips, packingItems, masterPackingItems, departureTasks, settings,
+      trips, packingItems, masterPackingItems, departureTasks, masterDepartureTasks, settings,
     }, null, 2);
   },
   importBackup: async (json) => {
     const data = JSON.parse(json);
     await Promise.all([
-      db.trips.clear(), db.packingItems.clear(), db.masterPackingItems.clear(), db.departureTasks.clear(),
+      db.trips.clear(), db.packingItems.clear(), db.masterPackingItems.clear(), db.departureTasks.clear(), db.masterDepartureTasks.clear(),
     ]);
     await Promise.all([
       data.trips?.length ? db.trips.bulkAdd(data.trips) : Promise.resolve(),
       data.packingItems?.length ? db.packingItems.bulkAdd(data.packingItems) : Promise.resolve(),
       data.masterPackingItems?.length ? db.masterPackingItems.bulkAdd(data.masterPackingItems) : Promise.resolve(),
       data.departureTasks?.length ? db.departureTasks.bulkAdd(data.departureTasks) : Promise.resolve(),
+      data.masterDepartureTasks?.length ? db.masterDepartureTasks.bulkAdd(data.masterDepartureTasks) : Promise.resolve(),
     ]);
     const importedTrips: Trip[] = data.trips ?? [];
     const importedSettings = data.settings ? { ...DEFAULT_SETTINGS, ...data.settings } : get().settings;
@@ -346,6 +375,7 @@ export const useStore = create<Store>((set, get) => ({
     set({
       trips: importedTrips, packingItems: data.packingItems ?? [],
       masterPackingItems: data.masterPackingItems ?? [], departureTasks: data.departureTasks ?? [],
+      masterDepartureTasks: data.masterDepartureTasks ?? [],
       settings: importedSettings,
       activeTripId: importedTrips[0]?.id ?? null,
     });
