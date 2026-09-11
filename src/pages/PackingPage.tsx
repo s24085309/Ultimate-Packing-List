@@ -1571,7 +1571,8 @@ export default function PackingPage() {
 
               {status && (
                 <div style={{
-                  marginTop: 14, textAlign: 'center', padding: '10px 14px', borderRadius: 12, fontWeight: 800, fontSize: 15,
+                  marginTop: 14, textAlign: 'center', padding: '10px 14px', borderRadius: 12, fontWeight: 800,
+                  fontSize: 'clamp(10px, 3.4vw, 15px)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   background: model!.ready ? 'rgba(34,197,94,0.15)' : 'rgba(249,115,22,0.15)', color: model!.ready ? '#4ade80' : '#fb923c',
                 }}>
                   {status.emoji} {status.text}
