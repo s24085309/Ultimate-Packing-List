@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.66';
+export const APP_VERSION = '6.9.67';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -462,6 +462,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-10',
     category: 'New Feature',
     description: 'The active trip\'s weather now refreshes automatically every time the app is opened or reloaded — no need to reopen Edit Trip and hit refresh yourself. Fails silently and keeps the existing forecast if the live lookup can\'t reach the weather service.',
+  },
+  {
+    version: '6.9.67',
+    date: '2026-09-11',
+    category: 'UI / Design Change',
+    description: 'The Packing Progress status now shows how many items are left to pack (e.g. "🟠 NOT QUITE READY — 5 items left to pack") instead of just the ready/not-ready message on its own.',
   },
 ];
 
