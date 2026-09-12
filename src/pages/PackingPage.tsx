@@ -1419,6 +1419,7 @@ export default function PackingPage() {
     return { visibleGroups: incomplete, packedGroups: complete, totalTripGroups: withRemaining.length };
   }, [model]);
   const [packedBucketOpen, setPackedBucketOpen] = useState(false);
+  const [weatherExpanded, setWeatherExpanded] = useState(false);
   // Two independent trackers, unaffected by view filter or by packed status
   // in the item's own group — ticking an item off here (charged / cable
   // packed) is entirely separate from ticking it off in its real group.
@@ -1539,7 +1540,7 @@ export default function PackingPage() {
                       🌦️ {trip.weatherLow != null ? `${trip.weatherLow}°–${trip.weatherHigh ?? '?'}° · ` : ''}{trip.weatherConditions}
                     </div>
                   )}
-                  {trip.weatherDaily && trip.weatherDaily.length > 0 && (
+                  {weatherExpanded && trip.weatherDaily && trip.weatherDaily.length > 0 && (
                     <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginTop: 12, paddingBottom: 2 }}>
                       {trip.weatherDaily.map((d, i) => (
                         <div key={i} style={{
@@ -1559,6 +1560,14 @@ export default function PackingPage() {
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: -4 }}>
+                  {trip.weatherDaily && trip.weatherDaily.length > 0 && (
+                    <button
+                      className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40, color: weatherExpanded ? '#c4b5fd' : undefined }}
+                      onClick={() => setWeatherExpanded(v => !v)} title="Daily forecast"
+                    >
+                      <AnimatedWeatherIcon conditions={trip.weatherDaily[0].conditions} size={20} />
+                    </button>
+                  )}
                   <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40 }} onClick={() => setEditingTrip(true)}><Pencil size={15} /></button>
                   <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40, color: '#fda4af' }} onClick={() => { if (confirm(`Delete "${trip.name}" and its packing list?`)) removeTrip(trip.id); }}><Trash2 size={15} /></button>
                 </div>

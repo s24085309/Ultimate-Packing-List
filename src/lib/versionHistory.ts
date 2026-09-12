@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.71';
+export const APP_VERSION = '6.9.72';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -492,6 +492,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-12',
     category: 'Bug Fix',
     description: 'The offline update system now explicitly cleans up outdated cached files after an update — helps installed phone home-screen apps actually pick up a new version instead of getting stuck showing an old one even after refreshing.',
+  },
+  {
+    version: '6.9.72',
+    date: '2026-09-12',
+    category: 'New Feature',
+    description: 'Added a 🌤️ weather button to the trip card, next to Edit/Delete — it shows an animated icon for the first day\'s forecast, and tapping it expands/collapses the full daily forecast strip beneath the trip details.',
   },
 ];
 
