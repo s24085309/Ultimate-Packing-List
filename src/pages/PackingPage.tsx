@@ -1478,18 +1478,30 @@ export default function PackingPage() {
               <History size={16} /> Past Trips ({pastTrips.length})
             </button>
           )}
-          <button className={s.btnGhost} onClick={() => setMasterOpen(true)} style={{ minHeight: 40, padding: '0 12px', fontSize: 13 }}>
+          <button
+            className={s.btnGhost} onClick={() => setMasterOpen(true)}
+            style={{ minHeight: 40, padding: '0 12px', fontSize: 13, background: 'rgba(168,85,247,0.18)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.35)' }}
+          >
             <Library size={16} /> Library
           </button>
-          <button className={s.btnPrimary} onClick={() => setExportOpen(true)} style={{ minHeight: 40, padding: '0 12px', fontSize: 13 }}>
+          <button
+            className={s.btnPrimary} onClick={() => setExportOpen(true)}
+            style={{ minHeight: 40, padding: '0 12px', fontSize: 13, background: '#f97316', borderColor: '#f97316' }}
+          >
             <Download size={16} /> Export
           </button>
           {trip && (
             <>
-              <button className={s.btnGhost} onClick={() => setSearchOpen(true)} title="Search items" aria-label="Search items" style={{ width: 40, minHeight: 40, padding: 0, flexShrink: 0 }}>
+              <button
+                className={s.btnGhost} onClick={() => setSearchOpen(true)} title="Search items" aria-label="Search items"
+                style={{ width: 64, minHeight: 40, padding: 0, flexShrink: 0, background: 'rgba(56,189,248,0.18)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.35)' }}
+              >
                 <Search size={16} />
               </button>
-              <button className={s.btnPrimary} onClick={() => setAddItemOpen(true)} title="Add item" aria-label="Add item" style={{ width: 40, minHeight: 40, padding: 0, flexShrink: 0 }}>
+              <button
+                className={s.btnPrimary} onClick={() => setAddItemOpen(true)} title="Add item" aria-label="Add item"
+                style={{ width: 64, minHeight: 40, padding: 0, flexShrink: 0, background: '#22c55e', borderColor: '#22c55e' }}
+              >
                 <Plus size={18} />
               </button>
             </>
