@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.72';
+export const APP_VERSION = '6.9.73';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -498,6 +498,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-12',
     category: 'New Feature',
     description: 'Added a 🌤️ weather button to the trip card, next to Edit/Delete — it shows an animated icon for the first day\'s forecast, and tapping it expands/collapses the full daily forecast strip beneath the trip details.',
+  },
+  {
+    version: '6.9.73',
+    date: '2026-09-12',
+    category: 'New Feature',
+    description: 'Trip card upgrades: the "Departs in X days" pill now turns amber inside a week out and red inside the last 3 days; each trip in the switcher shows its packing % ; the weather button gets a ⚠️ badge when rain, storms, or snow are forecast; and two new buttons — 📋 Duplicate (clones the trip with a fresh, unticked packing list) and 🔗 Share (a quick text summary via the share sheet or clipboard).',
   },
 ];
 

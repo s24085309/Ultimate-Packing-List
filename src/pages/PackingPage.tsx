@@ -3,7 +3,7 @@ import {
   Plus, Trash2, BatteryCharging, Battery, Download, Library, Cable,
   ChevronDown, PlaneTakeoff, Luggage, Pencil, X, Search, CloudSun, Loader2, RefreshCw,
   Archive, Eye, EyeOff, RotateCcw, Settings, History, Lock, Unlock, ArrowUp, ArrowDown,
-  AlarmClock, AlarmClockCheck,
+  AlarmClock, AlarmClockCheck, Copy, Share2,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PackingExportMenu from '../components/PackingExportMenu';
@@ -11,7 +11,7 @@ import SettingsModal from '../components/SettingsModal';
 import AnimatedWeatherIcon from '../components/AnimatedWeatherIcon';
 import DatePicker from '../components/DatePicker';
 import GroupPicker from '../components/GroupPicker';
-import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, effectiveQty, departureCountdown, sortMasterItems, type ViewFilter } from '../lib/packingExport';
+import { buildExportModel, DEFAULT_EXPORT_OPTIONS, statusLine, formatDateRange, tripDays, effectiveQty, departureCountdown, departureUrgencyColor, tripProgressPct, hasWeatherWarning, sortMasterItems, type ViewFilter } from '../lib/packingExport';
 import { searchCities, fetchForecast, refreshTripWeather, FORECAST_HORIZON_DAYS, type CityResult, type ForecastDay } from '../lib/weatherApi';
 import { APP_VERSION } from '../lib/versionHistory';
 import { TRIP_TYPES, type Trip, type PackingItem, type WeatherDay, type TripCity } from '../types';
@@ -1344,6 +1344,7 @@ export default function PackingPage() {
   const addTrip = useStore(st => st.addTrip);
   const updateTrip = useStore(st => st.updateTrip);
   const removeTrip = useStore(st => st.removeTrip);
+  const duplicateTrip = useStore(st => st.duplicateTrip);
   const items = useStore(st => st.packingItems);
   const tasks = useStore(st => st.departureTasks);
   const masterItems = useStore(st => st.masterPackingItems);
@@ -1406,6 +1407,37 @@ export default function PackingPage() {
 
   const model = trip ? buildExportModel(trip, items, tasks, DEFAULT_EXPORT_OPTIONS, filter) : null;
   const status = model ? statusLine(model) : null;
+
+  // A quick plain-text summary — separate from the full PDF/Word/Excel
+  // export menu, for a fast "here's my trip" share (native share sheet on
+  // phones, clipboard copy as a fallback everywhere else).
+  const shareTrip = async () => {
+    if (!trip || !model) return;
+    const tasksLeft = tripTasks.filter(t => !t.done).length;
+    const lines = [
+      `🧽 ${trip.name}`,
+      `${trip.destinations || '—'} · ${formatDateRange(trip)} · ${tripDays(trip)} day${tripDays(trip) === 1 ? '' : 's'}`,
+      departureCountdown(trip),
+      trip.weatherConditions ? `🌦️ ${trip.weatherLow != null ? `${trip.weatherLow}°–${trip.weatherHigh ?? '?'}° · ` : ''}${trip.weatherConditions}` : null,
+      `📦 Packing: ${model.packedItems}/${model.totalItems} (${model.progressPct}%)`,
+      tripTasks.length > 0 ? `✈️ Departure tasks: ${tripTasks.length - tasksLeft}/${tripTasks.length}` : null,
+    ].filter(Boolean).join('\n');
+    const nav = navigator as Navigator & { canShare?: (data: { text: string }) => boolean };
+    try {
+      if (nav.canShare?.({ text: lines }) && navigator.share) {
+        await navigator.share({ text: lines, title: trip.name });
+        return;
+      }
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return;
+    }
+    try {
+      await navigator.clipboard.writeText(lines);
+      alert('Trip summary copied to clipboard!');
+    } catch {
+      alert(lines);
+    }
+  };
 
   // Groups stay in the same (Master Library) order at all times — reordering
   // by how many items are left to pack made the list jump around every time
@@ -1470,7 +1502,9 @@ export default function PackingPage() {
 
       {trips.length > 0 && (
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16 }}>
-          {upcomingTrips.map(t => (
+          {upcomingTrips.map(t => {
+            const pct = tripProgressPct(t, items);
+            return (
             <button
               key={t.id}
               onClick={() => setActiveTripId(t.id)}
@@ -1482,8 +1516,10 @@ export default function PackingPage() {
               }}
             >
               <PlaneTakeoff size={14} style={{ marginRight: 6 }} />{t.name}
+              <span style={{ opacity: 0.7, marginLeft: 6, fontSize: 11.5, fontWeight: 700 }}>{pct}%</span>
             </button>
-          ))}
+            );
+          })}
           <button className={s.pill} onClick={() => setCreatingTrip(true)} style={{ flexShrink: 0, padding: '10px 16px' }}>
             <Plus size={14} style={{ marginRight: 4 }} />New Trip
           </button>
@@ -1523,10 +1559,10 @@ export default function PackingPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <div style={{ fontWeight: 800, fontSize: 20 }}>{trip.name}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
-                      <span className={s.pill} style={{ background: 'rgba(168,85,247,0.18)', color: '#c4b5fd', fontWeight: 700 }}>
+                      <span className={s.pill} style={{ background: departureUrgencyColor(trip).bg, color: departureUrgencyColor(trip).color, fontWeight: 700 }}>
                         {departureCountdown(trip)}
                       </span>
-                      <span className={s.pill} style={{ background: 'rgba(168,85,247,0.18)', color: '#c4b5fd', fontWeight: 700 }}>
+                      <span className={s.pill} style={{ background: departureUrgencyColor(trip).bg, color: departureUrgencyColor(trip).color, fontWeight: 700 }}>
                         {tripDays(trip)} day{tripDays(trip) === 1 ? '' : 's'} total
                       </span>
                     </div>
@@ -1559,15 +1595,29 @@ export default function PackingPage() {
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 6, marginTop: -4 }}>
+                <div style={{ display: 'flex', gap: 6, marginTop: -4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   {trip.weatherDaily && trip.weatherDaily.length > 0 && (
                     <button
-                      className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40, color: weatherExpanded ? '#c4b5fd' : undefined }}
-                      onClick={() => setWeatherExpanded(v => !v)} title="Daily forecast"
+                      className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40, position: 'relative', color: weatherExpanded ? '#c4b5fd' : undefined }}
+                      onClick={() => setWeatherExpanded(v => !v)} title={hasWeatherWarning(trip) ? 'Daily forecast — rain/snow/storms ahead' : 'Daily forecast'}
                     >
                       <AnimatedWeatherIcon conditions={trip.weatherDaily[0].conditions} size={20} />
+                      {hasWeatherWarning(trip) && (
+                        <span style={{
+                          position: 'absolute', top: 2, right: 2, fontSize: 10, lineHeight: 1,
+                          filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.6))',
+                        }}>⚠️</span>
+                      )}
                     </button>
                   )}
+                  <button
+                    className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40 }}
+                    onClick={() => duplicateTrip(trip.id)} title="Duplicate this trip"
+                  ><Copy size={15} /></button>
+                  <button
+                    className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40 }}
+                    onClick={shareTrip} title="Share trip summary"
+                  ><Share2 size={15} /></button>
                   <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40 }} onClick={() => setEditingTrip(true)}><Pencil size={15} /></button>
                   <button className={s.btnGhost} style={{ padding: '0 12px', minHeight: 40, color: '#fda4af' }} onClick={() => { if (confirm(`Delete "${trip.name}" and its packing list?`)) removeTrip(trip.id); }}><Trash2 size={15} /></button>
                 </div>

@@ -30,6 +30,7 @@ interface Store {
   addTrip: (t: Omit<Trip, 'id' | 'createdAt'>, includeGroups?: string[]) => string;
   updateTrip: (id: string, patch: Partial<Omit<Trip, 'id'>>) => void;
   removeTrip: (id: string) => void;
+  duplicateTrip: (id: string) => string;
 
   addPackingItem: (tripId: string, item: Omit<PackingItem, 'id' | 'tripId' | 'createdAt'>) => void;
   updatePackingItem: (id: string, patch: Partial<Omit<PackingItem, 'id' | 'tripId'>>) => void;
@@ -143,6 +144,37 @@ export const useStore = create<Store>((set, get) => ({
       departureTasks: get().departureTasks.filter(t => t.tripId !== id),
       activeTripId: get().activeTripId === id ? (trips[0]?.id ?? null) : get().activeTripId,
     });
+  },
+  // Clones a trip for a recurring destination — same destinations,
+  // accommodation, cities and packing/departure lists, but with dates and
+  // any date-tied weather cleared (a new trip needs its own dates set) and
+  // everything unticked so it starts fresh.
+  duplicateTrip: (id) => {
+    const source = get().trips.find(t => t.id === id);
+    if (!source) return '';
+    const newTripId = uid();
+    const trip: Trip = {
+      ...source, id: newTripId, createdAt: Date.now(),
+      name: `${source.name} (Copy)`, departureDate: '', returnDate: '', departureTime: undefined,
+      weatherDaily: [], weatherLow: undefined, weatherHigh: undefined, weatherConditions: undefined,
+    };
+    const sourceItems = get().packingItems.filter(i => i.tripId === id);
+    const newItems: PackingItem[] = sourceItems.map(i => ({
+      ...i, id: uid(), tripId: newTripId, createdAt: Date.now(),
+      packed: false, charged: false, cablePacked: false,
+    }));
+    const sourceTasks = get().departureTasks.filter(t => t.tripId === id);
+    const newTasks: DepartureTask[] = sourceTasks.map(t => ({ ...t, id: uid(), tripId: newTripId, done: false }));
+    db.trips.put(trip);
+    if (newItems.length) db.packingItems.bulkPut(newItems);
+    if (newTasks.length) db.departureTasks.bulkPut(newTasks);
+    set({
+      trips: [...get().trips, trip].sort((a, b) => a.departureDate.localeCompare(b.departureDate)),
+      packingItems: [...get().packingItems, ...newItems],
+      departureTasks: [...get().departureTasks, ...newTasks],
+      activeTripId: newTripId,
+    });
+    return newTripId;
   },
 
   addPackingItem: (tripId, item) => {

@@ -303,6 +303,36 @@ export function departureCountdown(trip: Trip): string {
   return `✅ Trip completed`;
 }
 
+// Colors the departure-countdown pill by urgency: calm (purple) while the
+// trip is far off or already underway/done, amber inside a week out, red
+// inside the last 3 days — a glance at the pill's color alone tells you
+// how urgent the trip is, without reading the text.
+export function departureUrgencyColor(trip: Trip): { bg: string; color: string } {
+  const calm = { bg: 'rgba(168,85,247,0.18)', color: '#c4b5fd' };
+  if (!trip.departureDate) return calm;
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const dep = new Date(trip.departureDate); dep.setHours(0, 0, 0, 0);
+  const daysToDep = Math.round((dep.getTime() - now.getTime()) / 86400000);
+  if (daysToDep < 0 || daysToDep > 7) return calm;
+  if (daysToDep <= 2) return { bg: 'rgba(239,68,68,0.2)', color: '#fca5a5' };
+  return { bg: 'rgba(249,115,22,0.2)', color: '#fdba74' };
+}
+
+// Lightweight packed/total percentage for a trip, honoring hidden groups —
+// used in the trip switcher so you can see progress without opening a trip.
+export function tripProgressPct(trip: Trip, allItems: PackingItem[]): number {
+  const hidden = new Set(trip.hiddenGroups ?? []);
+  const items = allItems.filter(i => i.tripId === trip.id && !hidden.has(i.group || 'Other'));
+  if (items.length === 0) return 0;
+  return Math.round((items.filter(i => i.packed).length / items.length) * 100);
+}
+
+// True if any day in the trip's forecast looks like rain, a storm, or snow —
+// used to badge the weather button so it's worth a look even before tapping.
+export function hasWeatherWarning(trip: Trip): boolean {
+  return (trip.weatherDaily ?? []).some(d => /rain|storm|thunder|snow|shower/i.test(d.conditions ?? ''));
+}
+
 export function formatDateRange(trip: Trip): string {
   const fmt = (d: string) => d ? new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
   return `${fmt(trip.departureDate)} → ${fmt(trip.returnDate)}`;
