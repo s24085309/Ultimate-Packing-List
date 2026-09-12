@@ -27,6 +27,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Without this, an outdated precache from a previous version can
+        // stick around after an update, and installed home-screen PWAs
+        // are the most likely to keep serving it since they don't get the
+        // browser's normal "hard refresh" gesture to shake it loose.
+        cleanupOutdatedCaches: true,
       },
     }),
   ],

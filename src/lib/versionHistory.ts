@@ -34,7 +34,7 @@ export interface VersionHistoryEntry {
 }
 
 // The single source of truth for the version shown in the top bar and Settings.
-export const APP_VERSION = '6.9.70';
+export const APP_VERSION = '6.9.71';
 
 // Chronological, oldest first — new entries are always appended to the end.
 // Never remove or edit past entries. Display newest-first (see getVersionHistory()).
@@ -486,6 +486,12 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     date: '2026-09-11',
     category: 'UI / Design Change',
     description: 'The Packing Progress "NOT QUITE READY" count now includes outstanding Departure Tasks, not just packing items — e.g. "— 7 left to finish" covers both what\'s left to pack and what\'s left to do before you leave.',
+  },
+  {
+    version: '6.9.71',
+    date: '2026-09-12',
+    category: 'Bug Fix',
+    description: 'The offline update system now explicitly cleans up outdated cached files after an update — helps installed phone home-screen apps actually pick up a new version instead of getting stuck showing an old one even after refreshing.',
   },
 ];
 
